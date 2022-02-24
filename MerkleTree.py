@@ -1,11 +1,10 @@
 import hashlib
-from random import shuffle
 
 
 class PathElement:
-    def __init__(self, is_left, hash):
+    def __init__(self, is_left, hsh):
         self.is_left = is_left
-        self.hash = hash
+        self.hash = hsh
 
 
 class Path:
@@ -14,11 +13,14 @@ class Path:
 
 
 class Witness:
-    def __init__(self, is_member, primpath, lpath, rpath):
-        self.right_path = rpath
-        self.left_path = lpath
+    def __init__(self, is_member, primary_path, left_path, right_path):
+        self.right_path = right_path
+        self.left_path = left_path
         self.is_member = is_member
-        self.primary_path = primpath  # direct path to member node, in case of non-membership it is a path to split node
+        self.primary_path = primary_path
+        # primary path is path to member node, in case of non-membership it is a path to split node
+        # Left path and right path only exists in case of split node.
+        # In such case left path is the all right path of the left subtree and vice versa for right path
 
 
 class MerkleNodeInterface:
@@ -34,8 +36,23 @@ class MerkleNodeInterface:
     def insert(self, obj) -> 'MerkleNodeInterface':
         raise NotImplementedError
 
+    def delete(self, obj) -> 'MerkleNodeInterface':
+        raise NotImplementedError
+
 
 class MerkleInternalNode(MerkleNodeInterface):
+
+    def delete(self, obj) -> 'MerkleNodeInterface':
+        if self.not_in_subtree(obj):
+            return self # element cannot be deleted because it is not in the sub-tree
+        if type(self.right) is MerkleLeafNode and self.right.obj is obj:
+            return self.left
+        if type(self.left) is MerkleLeafNode and self.left.obj is obj:
+            return self.right
+        if self.search_rule(obj):
+            return self.left.delete(obj)
+        else:
+            return self.right.delete(obj)
 
     def search_rule(self, obj):
         return obj < self.right.min
@@ -103,6 +120,7 @@ class MerkleLeafNode(MerkleNodeInterface):
         right_leaf = MerkleLeafNode(right)
         new_node = MerkleInternalNode(left_leaf, right_leaf)
         return new_node
+
 
     def search(self, obj, path) -> Witness:
         path_hashes = self.hash
