@@ -45,9 +45,9 @@ class MerkleInternalNode(MerkleNodeInterface):
     def delete(self, obj) -> 'MerkleNodeInterface':
         if self.not_in_subtree(obj):
             return self  # element cannot be deleted because it is not in the sub-tree
-        if type(self.right) is MerkleLeafNode and self.right.obj is obj:
+        if type(self.right) is MerkleLeafNode and self.right.obj == obj:
             return self.left
-        if type(self.left) is MerkleLeafNode and self.left.obj is obj:
+        if type(self.left) is MerkleLeafNode and self.left.obj == obj:
             return self.right
         if self.search_rule(obj):
             return self.left.delete(obj)
