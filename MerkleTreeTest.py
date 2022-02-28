@@ -33,7 +33,21 @@ class MerkleTreeTests(unittest.TestCase):
         assert not witness.is_member
         assert verify(tree.root.hash, witness)
 
-not_in = TestObject(222)
+    def test_deletion(self):
+        tree = construct_tree()
+        obj = TestObject(8)
+        tree.delete(obj) # Even number 8 should now be deleted
+        witness = tree.checkObject(obj)
+        assert not witness.is_member
+        assert verify(tree.root.hash, witness)
+
+    def test_insertion(self):
+        tree = construct_tree()
+        obj = TestObject(9)
+        tree.insert(obj)  # Odd number 9 should now be in the tree
+        witness = tree.checkObject(obj)
+        assert witness.is_member
+        assert verify(tree.root.hash, witness)
 
 
 if __name__ == '__main__':

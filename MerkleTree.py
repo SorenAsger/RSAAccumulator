@@ -45,14 +45,18 @@ class MerkleInternalNode(MerkleNodeInterface):
     def delete(self, obj) -> 'MerkleNodeInterface':
         if self.not_in_subtree(obj):
             return self  # element cannot be deleted because it is not in the sub-tree
-        if type(self.right) is MerkleLeafNode and self.right.obj is obj:
+        if type(self.right) is MerkleLeafNode and self.right.obj == obj:
             return self.left
-        if type(self.left) is MerkleLeafNode and self.left.obj is obj:
+        if type(self.left) is MerkleLeafNode and self.left.obj == obj:
             return self.right
         if self.search_rule(obj):
-            return self.left.delete(obj)
+            self.left = self.left.delete(obj)
+            self.min = self.left.min
         else:
-            return self.right.delete(obj)
+            self.right = self.right.delete(obj)
+            self.max = self.right.max
+        self.update_hash()
+        return self
 
     def search_rule(self, obj):
         return obj < self.right.min
@@ -113,6 +117,9 @@ class MerkleLeafNode(MerkleNodeInterface):
         self.min = obj
         self.max = obj
 
+    def delete(self, obj):
+        print(obj)
+
     def insert(self, obj2):
         obj1 = self.obj
         left, right = (obj1, obj2) if (obj1 < obj2) else (obj2, obj1)
@@ -139,7 +146,7 @@ class MerkleTree:
         self.root = self.root.insert(obj)
 
     def delete(self, obj):
-        self.root.delete(obj)
+        self.root = self.root.delete(obj)
 
     def search(self, obj) -> Witness:
         path_hashes = (self.root.hash, self.root.left.hash, self.root.right.hash)
