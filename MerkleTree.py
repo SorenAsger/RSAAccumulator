@@ -44,7 +44,7 @@ class MerkleInternalNode(MerkleNodeInterface):
 
     def delete(self, obj) -> 'MerkleNodeInterface':
         if self.not_in_subtree(obj):
-            return self # element cannot be deleted because it is not in the sub-tree
+            return self  # element cannot be deleted because it is not in the sub-tree
         if type(self.right) is MerkleLeafNode and self.right.obj is obj:
             return self.left
         if type(self.left) is MerkleLeafNode and self.left.obj is obj:
@@ -121,7 +121,6 @@ class MerkleLeafNode(MerkleNodeInterface):
         new_node = MerkleInternalNode(left_leaf, right_leaf)
         return new_node
 
-
     def search(self, obj, path) -> Witness:
         path_hashes = self.hash
         path.append(path_hashes)
@@ -139,6 +138,9 @@ class MerkleTree:
     def insert(self, obj):
         self.root = self.root.insert(obj)
 
+    def delete(self, obj):
+        self.root.delete(obj)
+
     def search(self, obj) -> Witness:
         path_hashes = (self.root.hash, self.root.left.hash, self.root.right.hash)
         # if obj is left of smallest value in database then path to the left is proof that the element is not there
@@ -154,8 +156,3 @@ class MerkleTree:
     def checkObject(self, obj):
         # returns bool, witness
         return self.search(obj)
-
-
-
-
-
