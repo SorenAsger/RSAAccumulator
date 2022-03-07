@@ -6,13 +6,13 @@ from Crypto.Util import number
 security = 128
 
 
-def random_prime():
-    return number.getPrime(security)
+def random_prime(bits=2048):
+    return number.getPrime(bits)
 
 
-def random_safe_prime():
+def random_safe_prime(bits=2048):
     while True:
-        p = random_prime()
+        p = random_prime(bits)
         pprime = 2 * p + 1
         if number.isPrime(pprime):
             return p, pprime
@@ -21,34 +21,38 @@ def random_safe_prime():
             return pprime, p
 
 
-def generate_safe_RSA_modulus():
-    p, pp = random_safe_prime()
-    q, qp = random_safe_prime()
+def generate_safe_RSA_modulus(bits=2048):
+    p, pp = random_safe_prime(bits)
+    q, qp = random_safe_prime(bits)
     return p * q
 
 
-a = random.randint(0, 2 ** security)
-b = random.randint(0, 2 ** security)
-p = number.getPrime(security)
+
 print(a, b, p)
 
+class PrimeHash():
 
-def universal_hash(x):
-    return (x * a + b % p)
+    def __init__(self, bits):
+        self.a = random.randint(0, 2 ** security)
+        self.b = random.randint(0, 2 ** security)
+        self.p = number.getPrime(security)
+
+    def universal_hash(self, x):
+        return (x * self.a + self.b % self.p)
 
 
-def inv_universal_hash(x, i):
-    return int(x // a - b + i * p)
+    def inv_universal_hash(self, x, i):
+        return int(x // self.a - self.b + i * self.p)
 
 
-def prime_hash(x):
-    i = 0
-    hash_val = universal_hash(x)
-    while True:
-        num = inv_universal_hash(hash_val, i)
-        if number.isPrime(num):
-            return num
-        i += 1
+    def prime_hash(self, x):
+        i = 0
+        hash_val = self.universal_hash(x)
+        while True:
+            num = self.inv_universal_hash(hash_val, i)
+            if number.isPrime(num):
+                return num
+            i += 1
 
 
 def get_generator(n):
@@ -78,12 +82,9 @@ class Accumulator:
         #cd, aprime, bprime = gcdExtended(x, self.u)
         cd, bprime, aprime = gcdExtended(x, self.u)
         k = 1
-        print("Hi")
-        print(aprime)
         if aprime < -x:
             k = int(-aprime // x) + 1
         a = aprime + k * x
-        print(a)
         b = bprime - k * self.u
         d = pow(self.g, -b, self.n)
         return a, d
@@ -112,9 +113,7 @@ def gcdExtended(a, b):
     return gcd, x, y
 
 
-# Driver code
-
-
+"""
 print(prime_hash(234592))
 print(random_safe_prime())
 test_n = generate_safe_RSA_modulus()
@@ -134,3 +133,4 @@ print(verify_membership(primevals[0], mproof, acc_val, test_n))
 print(verify_membership(primevals[0], mproof, acc_val, test_n))
 print(verify_nonmembership(d, a, primevals[0] + 2, acc_val, test_n, acc.g))
 print(verify_nonmembership(d2, a2, prime_hash(102), acc_val, test_n, acc.g))
+"""
