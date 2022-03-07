@@ -35,10 +35,8 @@ class PrimeHash():
     def universal_hash(self, x):
         return (x * self.a + self.b % self.p)
 
-
     def inv_universal_hash(self, x, i):
         return int(x // self.a - self.b + i * self.p)
-
 
     def prime_hash(self, x):
         i = 0
@@ -48,6 +46,8 @@ class PrimeHash():
             if number.isPrime(num):
                 return num
             i += 1
+            if i % 1000 == 0 and i > 1:
+                print(f"failure: {i}")
 
 
 def create_generator(n, security):
@@ -74,7 +74,7 @@ class Accumulator:
         return cx
 
     def get_nonmembership(self, x):
-        #cd, aprime, bprime = gcdExtended(x, self.u)
+        # cd, aprime, bprime = gcdExtended(x, self.u)
         cd, bprime, aprime = gcdExtended(x, self.u)
         k = 1
         if aprime < -x:
