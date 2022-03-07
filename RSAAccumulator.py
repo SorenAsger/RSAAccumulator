@@ -3,8 +3,6 @@ from math import gcd
 
 from Crypto.Util import number
 
-security = 128
-
 
 def random_prime(bits=2048):
     return number.getPrime(bits)
@@ -27,15 +25,12 @@ def generate_safe_RSA_modulus(bits=2048):
     return p * q
 
 
-
-print(a, b, p)
-
 class PrimeHash():
 
     def __init__(self, bits):
-        self.a = random.randint(0, 2 ** security)
-        self.b = random.randint(0, 2 ** security)
-        self.p = number.getPrime(security)
+        self.a = random.randint(0, 2 ** bits)
+        self.b = random.randint(0, 2 ** bits)
+        self.p = number.getPrime(bits)
 
     def universal_hash(self, x):
         return (x * self.a + self.b % self.p)
@@ -55,18 +50,18 @@ class PrimeHash():
             i += 1
 
 
-def get_generator(n):
+def create_generator(n, security):
     a = random.randint(0, 2 ** security)
     if gcd(a - 1, n) == 1 and gcd(a + 1, n) == 1 and gcd(a, n) == 1:
         return a ** 2 % n
-    return get_generator(n)
+    return create_generator(n, security)
 
 
 class Accumulator:
 
-    def __init__(self, n):
-        self.n = n
-        self.g = get_generator(n)
+    def __init__(self, security):
+        self.n = generate_safe_RSA_modulus(security)
+        self.g = create_generator(self.n, security)
         self.acc = self.g
         self.u = 1
 

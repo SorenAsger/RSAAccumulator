@@ -41,16 +41,19 @@ def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
     print(f"Avg mem. time {sum(memqueries_time) / reps}")
     print(f"Avg nonmem. time {sum(nonmemqueries_time) / reps}")
 
+
 def RSABenchmark(iters, memqueries, nonmemqueries, reps):
+    prime_times = []
     cons_times = []
     memqueries_time = []
     nonmemqueries_time = []
     safe_prime_times = []
     for j in range(reps):
+        prime_hash = PrimeHash(2048)
         start_time = time.time()
         rsa_modulus = generate_safe_RSA_modulus()
-        prime_hash = PrimeHash(2048)
         end_time = time.time()
+        safe_prime_times.append(end_time - start_time)
         test_objects = []
         for i in range(iters):
             test_objects.append(TestObject(i*2))
