@@ -1,7 +1,10 @@
+import hashlib
 import random
-from math import gcd
 
+import Crypto
+from Crypto import Random
 from Crypto.Util import number
+from gmpy2 import gmpy2, powmod, mpz, c_div, gcdext, gcd
 
 
 def random_prime(bits=2048):
@@ -20,25 +23,53 @@ def random_safe_prime(bits=2048):
 
 
 def generate_safe_RSA_modulus(bits=2048):
-    p, pp = random_safe_prime(bits)
-    q, qp = random_safe_prime(bits)
+    p, pp = random_safe_prime(bits // 2)
+    q, qp = random_safe_prime(bits // 2)
     return p * q
 
 
-class PrimeHash():
+class PrimeHashv2:
 
-    def __init__(self, bits):
-        self.a = random.randint(0, 2 ** bits)
-        self.b = random.randint(0, 2 ** bits)
-        self.p = number.getPrime(bits)
+    def __init__(self, security=128):
+        self.p = number.getPrime(security)
+        self.b = random.randint(2 ** (security - 1), 2 ** security) % self.p
+        self.a = random.randint(2 ** (security - 1), 2 ** security) % self.p
 
     def universal_hash(self, x):
-        return (x * self.a + self.b % self.p)
+        return (x * self.a + self.b) % self.p
+
+    def prime_hash(self, x):
+        # Proving any sort of security of this seems impossible
+        # We essentially apply a universal hash and then select next prime
+        # Seems quite impossible to make any guarantees on collisions here
+        # Maliciously finding collisions is quite easy
+        return int(gmpy2.next_prime(self.universal_hash(x)))
+
+
+class PrimeHash:
+
+    def __init__(self, security=128):
+        self.p = number.getPrime(security)
+        self.a = random.randint(2 ** (security - 1), 2 ** security) % self.p
+        self.b = random.randint(2 ** (security - 1), 2 ** security) % self.p
+
+    def universal_hash(self, x):
+        # Seems to be some issue here that gives collisions, might be related to the inverse computation
+        return (x * self.a + self.b) % self.p
 
     def inv_universal_hash(self, x, i):
+        """
+        :param x: element to compute inverse of
+        :param i: i'th inverse to compute
+        :return: the i'th inverse of x
+        """
         return int(x // self.a - self.b + i * self.p)
 
     def prime_hash(self, x):
+        """
+        :param x: element to hash
+        :return: a prime as hash value
+        """
         i = 0
         hash_val = self.universal_hash(x)
         while True:
@@ -46,8 +77,9 @@ class PrimeHash():
             if number.isPrime(num):
                 return num
             i += 1
+            # below is just to notify if it takes too many iterations
             if i % 1000 == 0 and i > 1:
-                print(f"failure: {i}")
+                print(f"Failure: {i}")
 
 
 def create_generator(n, security):
@@ -60,52 +92,38 @@ def create_generator(n, security):
 class Accumulator:
 
     def __init__(self, security):
-        self.n = generate_safe_RSA_modulus(security)
-        self.g = create_generator(self.n, security)
+        self.n = mpz(generate_safe_RSA_modulus(security))
+        self.g = mpz(create_generator(self.n, security))
         self.acc = self.g
-        self.u = 1
+        self.u = mpz(1)
 
     def insert(self, x):
-        self.acc = pow(self.acc, x, self.n)
+        self.acc = powmod(self.acc, x, self.n)
         self.u = self.u * x
 
     def get_membership(self, x):
-        cx = pow(self.g, int(self.u // x), self.n)
+        cx = powmod(self.g, c_div(self.u, x), self.n)
         return cx
 
     def get_nonmembership(self, x):
         # cd, aprime, bprime = gcdExtended(x, self.u)
-        cd, bprime, aprime = gcdExtended(x, self.u)
+        cd, bprime, aprime = gcdext(x, self.u)
         k = 1
         if aprime < -x:
-            k = int(-aprime // x) + 1
+            k = c_div(-aprime, x) + 1
         a = aprime + k * x
         b = bprime - k * self.u
-        d = pow(self.g, -b, self.n)
+        d = powmod(self.g, -b, self.n)
         return a, d
 
 
 def verify_membership(x, cx, c, n):
-    return pow(cx, x, n) == c
+    return powmod(cx, x, n) == c
 
 
 def verify_nonmembership(d, a, x, c, n, g):
-    return pow(c, a, n) == ((pow(d, x, n) * g) % n)
+    return powmod(c, a, n) == ((powmod(d, x, n) * g) % n)
 
-
-def gcdExtended(a, b):
-    # Base Case
-    if a == 0:
-        return b, 0, 1
-
-    gcd, x1, y1 = gcdExtended(b % a, a)
-
-    # Update x and y using results of recursive
-    # call
-    x = y1 - (b // a) * x1
-    y = x1
-
-    return gcd, x, y
 
 
 """
@@ -129,3 +147,4 @@ print(verify_membership(primevals[0], mproof, acc_val, test_n))
 print(verify_nonmembership(d, a, primevals[0] + 2, acc_val, test_n, acc.g))
 print(verify_nonmembership(d2, a2, prime_hash(102), acc_val, test_n, acc.g))
 """
+

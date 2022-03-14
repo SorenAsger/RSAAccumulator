@@ -1,7 +1,8 @@
 import random
 import time
 from MerkleTree import MerkleTree
-from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, PrimeHash, verify_membership, verify_nonmembership
+from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, PrimeHash, verify_membership, verify_nonmembership, \
+    PrimeHashv2
 from TestObject import TestObject
 from Verification import verify
 
@@ -52,11 +53,11 @@ def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
         end_time = time.time()
         nonmemqueries_verify_time.append(end_time-start_time)
         print(f"Nonmemqueries verify {nonmemqueries} time {end_time-start_time}")
-    print(f"Avg cons. time {sum(cons_times) / reps}")
-    print(f"Avg mem. proof  time {sum(memqueries_proof_time) / reps}")
-    print(f"Avg mem. verify time {sum(memqueries_verify_time) / reps}")
-    print(f"Avg nonmem. proof time {sum(nonmemqueries_proof_time) / reps}")
-    print(f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps}")
+    print(f"Avg cons. time {sum(cons_times) / reps}, avg per query {sum(memqueries_verify_time) / (reps * iters)} ")
+    print(f"Avg mem. proof  time {sum(memqueries_proof_time) / reps}, avg per query {sum(memqueries_proof_time) / (reps * memqueries)}")
+    print(f"Avg mem. verify time {sum(memqueries_verify_time) / reps} avg per query {sum(memqueries_verify_time) / (reps * memqueries)}")
+    print(f"Avg nonmem. proof time {sum(nonmemqueries_proof_time) / reps}, avg per query {sum(nonmemqueries_proof_time) / (reps * nonmemqueries)}")
+    print(f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps} avg per query {sum(nonmemqueries_verify_time) / (reps * nonmemqueries)}")
 
 
 def RSABenchmark(iters, memqueries, nonmemqueries, reps, security=2048):
@@ -69,8 +70,9 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, security=2048):
     nonmemqueries_verify_time = []
     nonmemqueries_prime_time = []
     safe_prime_times = []
+    hash_security = 128
     for j in range(reps):
-        prime_hash = PrimeHash(security)
+        prime_hash = PrimeHashv2(hash_security)
         start_time = time.time()
         acc = Accumulator(security)
         end_time = time.time()
@@ -141,15 +143,15 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, security=2048):
         print(f"Nonmemquery verify time {end_time - start_time}")
         nonmemqueries_verify_time.append(end_time-start_time)
         #print(f"Nonmemqueries {nonmemqueries} time {end_time-start_time}")
-    print(f"Avg prime_times time {sum(prime_times) / reps}")
+    print(f"Avg prime_times time {sum(prime_times) / reps} avg. per query {sum(prime_times) / (reps * iters)}")
     print(f"Avg safe_prime_times time {sum(safe_prime_times) / reps}")
-    print(f"Avg ins. time {sum(insertion_times) / reps}")
-    print(f"Avg mem. prime time {sum(memqueries_prime_time) / reps}")
-    print(f"Avg mem. proof time {sum(memqueries_proof_time) / reps}")
-    print(f"Avg mem. verify time {sum(memqueries_verify_time) / reps}")
-    print(f"Avg nonmem. prime time {sum(nonmemqueries_prime_time) / reps}")
-    print(f"Avg nonmem. proof time {sum(nonmemqueries_proof_time) / reps}")
-    print(f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps}")
+    print(f"Avg ins. time {sum(insertion_times) / reps} and avg. per query {sum(insertion_times) / (reps * iters)}")
+    print(f"Avg mem. prime time {sum(memqueries_prime_time) / reps} avg. per query {sum(memqueries_prime_time) / (reps * memqueries)}")
+    print(f"Avg mem. proof time {sum(memqueries_proof_time) / reps} avg. per query {sum(memqueries_proof_time) / (reps * memqueries)}")
+    print(f"Avg mem. verify time {sum(memqueries_verify_time) / reps} avg. per query {sum(memqueries_verify_time) / (reps * memqueries)}")
+    print(f"Avg nonmem. prime time {sum(nonmemqueries_prime_time) / reps} avg. per query {sum(nonmemqueries_prime_time) / (reps * nonmemqueries)}")
+    print(f"Avg nonmem. proof time {sum(nonmemqueries_proof_time) / reps} avg. per query {sum(nonmemqueries_proof_time) / (reps * nonmemqueries)}")
+    print(f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps} avg. per query {sum(nonmemqueries_verify_time) / (reps * nonmemqueries)}")
 
 
 #MerkleTreeBenchmark(100000, 10000, 10000, 5)

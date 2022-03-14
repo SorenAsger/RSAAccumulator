@@ -1,6 +1,9 @@
 import cProfile
 def test():
-    RSABenchmark(500, 100, 100, 5, security=60)
-from Benchmarking import RSABenchmark
-#cProfile.run("test()")
-test()
+    RSABenchmark(2000, 1000, 1000, 5, security=256)
+def test2():
+    MerkleTreeBenchmark(10000, 1000, 1000, 5)
+from Benchmarking import RSABenchmark, MerkleTreeBenchmark
+cProfile.run("test()")
+#test()
+test2()
