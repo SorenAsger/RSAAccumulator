@@ -198,17 +198,30 @@ def run_rsa_benchmarks():
             queries = int(n * j)
             print(f"Starting run with {n} insertions, {queries} queries and hash function ?")
             hash_security = 40
-            # prime_hash = PrimeHashv2(hash_security)
-            prime_hash = PrimeHash(hash_security)
-            memqueries, nonmemqueries, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size = RSABenchmark(
+            prime_hash = PrimeHashv2(hash_security)
+            #prime_hash = PrimeHash(hash_security)
+            memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size = RSABenchmark(
                 n, queries, queries,
                 reps, prime_hash, rsa_modulus,
                 security=security,)
-            text = f"{memqueries}, {nonmemqueries}, {insertion_time}, {safe_prime_time}, {prime_time}, {security}\n"
+            text = f"{n}, {queries}, {memqueries_time}, {nonmemqueries_time}, {insertion_time}, {prime_time}, {security}, {hash_security}\n"
             print(text)
             f.write(text)
     f.write("--END RSA BENCHMARK--\n")
     f.close()
 
 
+
 run_rsa_benchmarks()
+
+def read_file():
+    pass
+
+def plot_data(data):
+    insertions = data[0]
+    queries = data[1]
+    memqueries_time = data[2]
+    nonmemqueries_time = data[3]
+    insertion_time = data[4]
+    prime_time = data[5]
+
