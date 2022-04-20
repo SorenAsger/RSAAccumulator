@@ -186,25 +186,26 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus
 # RSABenchmark(10000, 800, 800, 5, security=128)
 
 def run_rsa_benchmarks():
-    insertions = [2 ** j for j in range(4, 14)]
-    query_percent = [0.1, 0.2, 0.5]
+    insertions = [2 ** j for j in range(7, 16)]
+    queries = [5, 10, 15, 20]
     reps = 5
     security = 2048
     f = open("benchmarks.txt", "a")
     f.write("--START RSA BENCHMARK--\n")
     rsa_modulus = generate_safe_RSA_modulus(security)
     for n in insertions:
-        for j in query_percent:
-            queries = int(n * j)
-            print(f"Starting run with {n} insertions, {queries} queries and hash function ?")
-            hash_security = 40
+        for j in queries:
+            query_amount = j
+            print(f"Starting run with {n} insertions, {query_amount} queries and hash function ?")
+            hash_security = 60
             prime_hash = PrimeHashv2(hash_security)
             #prime_hash = PrimeHash(hash_security)
             memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size = RSABenchmark(
-                n, queries, queries,
+                n, query_amount, query_amount,
                 reps, prime_hash, rsa_modulus,
                 security=security,)
-            text = f"{n}, {queries}, {memqueries_time}, {nonmemqueries_time}, {insertion_time}, {prime_time}, {security}, {hash_security}\n"
+            text = f"{n}, {query_amount}, {memqueries_time}, {nonmemqueries_time}, {insertion_time}, {prime_time}, {security}, {hash_security}" \
+                   f"{memwit_size}, {nonmem_size},\n"
             print(text)
             f.write(text)
     f.write("--END RSA BENCHMARK--\n")

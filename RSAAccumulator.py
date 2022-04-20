@@ -41,9 +41,6 @@ class PrimeHashv2:
         #print(self.byts)
         #print(len(self.byts))
 
-    def universal_hash(self, x):
-        return (x * self.a + self.b) % self.p
-
     def random_oracle(self, x):
         m = hashlib.sha256()
         #print(self.b)
