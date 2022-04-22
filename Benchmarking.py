@@ -5,6 +5,7 @@ from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, PrimeHash, ve
     PrimeHashv2
 from TestObject import TestObject
 from Verification import verify
+import matplotlib.pyplot as plt
 
 
 def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
@@ -185,11 +186,11 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus
 # MerkleTreeBenchmark(100000, 10000, 10000, 5)
 # RSABenchmark(10000, 800, 800, 5, security=128)
 
-def run_rsa_benchmarks():
-    insertions = [2 ** j for j in range(7, 16)]
-    queries = [5, 10, 15, 20]
+def run_rsa_benchmarks(hash_security=60):
+    insertions = [2 ** j for j in range(7, 15)]
+    queries = [10]
     reps = 5
-    security = 2048
+    security = 1024
     f = open("benchmarks.txt", "a")
     f.write("--START RSA BENCHMARK--\n")
     rsa_modulus = generate_safe_RSA_modulus(security)
@@ -197,32 +198,103 @@ def run_rsa_benchmarks():
         for j in queries:
             query_amount = j
             print(f"Starting run with {n} insertions, {query_amount} queries and hash function ?")
-            hash_security = 60
-            prime_hash = PrimeHashv2(hash_security)
-            #prime_hash = PrimeHash(hash_security)
+            # prime_hash = PrimeHashv2(hash_security)
+            prime_hash = PrimeHash(hash_security)
             memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size = RSABenchmark(
                 n, query_amount, query_amount,
                 reps, prime_hash, rsa_modulus,
-                security=security,)
-            text = f"{n}, {query_amount}, {memqueries_time}, {nonmemqueries_time}, {insertion_time}, {prime_time}, {security}, {hash_security}" \
+                security=security, )
+            text = f"{n}, {query_amount}, {memqueries_time}, {nonmemqueries_time}, {insertion_time}, {prime_time}, {security}, {hash_security}, " \
                    f"{memwit_size}, {nonmem_size},\n"
             print(text)
             f.write(text)
-    f.write("--END RSA BENCHMARK--\n")
     f.close()
 
 
+def read_file(idx1=1, idx2=2):
+    f = open("benchmarks.txt", "r")
+    text = f.read().split("--START RSA BENCHMARK--\n")
+    measurements = text[idx1].replace("(", "").replace(")", "")
+    measurements2 = text[idx2].replace("(", "").replace(")", "")
+    insertion_times, k1, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec = get_measurements(
+        measurements)
+    insertion_times2, k2, memqueries_proof_times2, memqueries_verify_times2, nonmemqueries_proof_times2, nonmemqueries_verify_times2, nonmemwit_size2, ns2, sec2 = get_measurements(
+        measurements2)
+    assert ns == ns2
+    print(f"RSA security {sec}")
+    plt.title(f"Avg. membership witness generation time with hash size: {k1}")
+    plt.xlabel("Total insertions")
+    plt.ylabel("Time in seconds")
+    label_1 = "Hash size 60"
+    label_2 = "Hash size 35"
+    plt.plot(ns, memqueries_proof_times, label=label_1)
+    plt.plot(ns, memqueries_proof_times2, label=label_2)
+    plt.legend(loc="upper left")
+    plt.show()
 
-run_rsa_benchmarks()
+    plt.title(f"Avg. membership witness verification time with hash size: {k1}")
+    plt.xlabel("Total insertions")
+    plt.ylabel("Time in seconds")
+    plt.plot(ns, memqueries_verify_times, label=label_1)
+    plt.plot(ns, memqueries_verify_times2, label=label_2)
+    plt.legend(loc="upper left")
+    plt.show()
 
-def read_file():
-    pass
+    plt.title(f"Insertion time")
+    plt.xlabel(f"Total insertions")
+    plt.ylabel(f"Total time in seconds")
+    plt.plot(ns, insertion_times, label=label_1)
+    plt.plot(ns, insertion_times2, label=label_2)
+    plt.legend(loc="upper left")
+    plt.show()
 
-def plot_data(data):
-    insertions = data[0]
-    queries = data[1]
-    memqueries_time = data[2]
-    nonmemqueries_time = data[3]
-    insertion_time = data[4]
-    prime_time = data[5]
+    plt.title(f"Avg. non-membership witness generation time with hash size: {k1}")
+    plt.xlabel("Total insertions")
+    plt.ylabel("Time in seconds")
+    plt.plot(ns, nonmemqueries_proof_times, label=label_1)
+    plt.plot(ns, nonmemqueries_proof_times2, label=label_2)
+    plt.legend(loc="upper left")
+    plt.show()
 
+    plt.title(f"Avg. non-membership witness verification time with hash size: {k1}")
+    plt.xlabel("Total insertions")
+    plt.ylabel("Time in seconds")
+    plt.plot(ns, nonmemqueries_verify_times, label=label_1)
+    plt.plot(ns, nonmemqueries_verify_times2, label=label_2)
+    plt.legend(loc="upper left")
+    plt.show()
+
+    plt.title(f"Non-membership witness size with hash size: {k1}")
+    plt.plot(ns, nonmemwit_size, label=label_1)
+    plt.plot(ns, nonmemwit_size2, label=label_2)
+    plt.legend(loc="upper left")
+    plt.show()
+
+
+def get_measurements(measurements):
+    ns = []
+    memqueries_proof_times = []
+    memqueries_verify_times = []
+    nonmemqueries_proof_times = []
+    nonmemqueries_verify_times = []
+    insertion_times = []
+    memwit_size = []
+    nonmemwit_size = []
+    for measurement in measurements.split("\n")[:-1]:
+        measurement = measurement.split(",")
+        ns.append(int(measurement[0]))
+        queries = int(measurement[1])
+        k = int(measurement[11])
+        sec = int(measurement[10])
+        memqueries_proof_times.append(float(measurement[3]) / queries)
+        memqueries_verify_times.append(float(measurement[4]) / int(measurement[1]))
+        nonmemqueries_proof_times.append(float(measurement[6]) / int(measurement[1]))
+        nonmemqueries_verify_times.append(float(measurement[7]) / int(measurement[1]))
+        insertion_times.append(float(measurement[8]))
+        memwit_size.append(float(measurement[12]))
+        nonmemwit_size.append(float(measurement[13]))
+    return insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec
+
+
+# run_rsa_benchmarks(30)
+read_file(3, 5)

@@ -189,6 +189,8 @@ class Accumulator:
         return a, d
 
 
+
+
 def verify_membership(x, cx, c, n):
     return powmod(cx, x, n) == c
 
