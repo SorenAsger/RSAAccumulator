@@ -111,7 +111,7 @@ def RSABenchmark_bulk(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_mo
 
 
 def run_rsa_benchmarks(hash_security=60):
-    insertions = [2000 * j for j in range(1, 30)]
+    insertions = [4000 * j for j in range(1, 10)]
     queries = [2^9]
     reps = 5
     security = 1024
@@ -278,10 +278,10 @@ def get_measurements(measurements):
         nonmemqueries_verify_times.append(float(measurement[7]) / queries)
         print(float(measurement[7]))
         print(float(measurement[7]) / queries)
-        insertion_times.append(float(measurement[8]))
+        insertion_times.append(float(measurement[8]) / queries)
         memwit_size.append(float(measurement[12]))
         nonmemwit_size.append(float(measurement[13]))
     return insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec
 
 #run_rsa_benchmarks(60)
-read_filesingle(13)
+read_filesingle(4)

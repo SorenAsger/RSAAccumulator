@@ -168,18 +168,25 @@ class Accumulator:
             self.n = rsa_modulus
         self.g = mpz(create_generator(self.n, security))
         self.acc = self.g
-        self.u = mpz(1)
+        #self.u = mpz(1)
+        self.elements = set()
 
     def insert(self, x):
         self.acc = powmod(self.acc, x, self.n)
-        self.u = self.u * x
+        self.elements.add(x)
+        #self.u = self.u * x
 
     def get_membership(self, x):
-        cx = powmod(self.g, c_div(self.u, x), self.n)
+        #cx = powmod(self.g, c_div(self.u, x), self.n)
+        cx = self.g
+        for ele in self.elements:
+            if ele != x:
+                cx = powmod(cx, ele, self.n)
         return cx
 
     def get_nonmembership(self, x):
-        cd, bprime, aprime = gcdext(x, self.u)
+        u = prod(self.elements)
+        cd, bprime, aprime = gcdext(x, u)
         # cd, bprime, aprime = gcdext(x, self.u)
         k = c_div(-aprime, x)
         a = aprime + k * x
@@ -190,13 +197,16 @@ class Accumulator:
         # Which implies 0 <= aprime + k*x
         # Want to minimize witness size, we want to minimize aprime + k*x, obv if aprime = - kx?, so
         # find k = -aprime x
-        b = bprime - k * self.u
+        b = bprime - k * u
         d = powmod(self.g, -b, self.n)
         return a, d
 
     def get_bulk_membership(self, L):
-        v = prod(L)
-        guv = powmod(self.g, c_div(self.u, v), self.n)
+        guv = self.g
+        #for ele in self.elements - set(L):
+        #    guv = powmod(guv, ele, self.n)
+        #guv = powmod(self.g, prod(self.elements - set(L)), self.n)
+        guv = prod_pow(self.g, self.elements - set(L), self.n)
 
         def rec_help(to_partition, current_val):
             if len(to_partition) == 1:
@@ -205,10 +215,17 @@ class Accumulator:
             part_1 = to_partition[:split_point]
             part_2 = to_partition[split_point:]
             # product computation can be optimized
-            prod_1 = prod(part_1)
-            prod_2 = prod(part_2)
-            val_1 = powmod(current_val, prod_2, self.n)
-            val_2 = powmod(current_val, prod_1, self.n)
+            val_1 = prod_pow(current_val, part_2, self.n)
+            val_2 = prod_pow(current_val, part_1, self.n)
+            #val_1 = powmod(current_val, prod(part_2), self.n)
+            #val_2 = powmod(current_val, prod(part_1), self.n)
+            if False:
+                val_1 = current_val
+                val_2 = current_val
+                for ele in part_1:
+                    val_2 = powmod(val_2, ele, self.n)
+                for ele in part_2:
+                    val_1 = powmod(val_1, ele, self.n)
             return rec_help(part_1, val_1) + rec_help(part_2, val_2)
 
         witnesses = rec_help(L, guv)
@@ -216,10 +233,11 @@ class Accumulator:
 
     def get_bulk_nonmembership(self, L):
         v = prod(L)
-        cd, bprime, aprime = gcdext(v, self.u)
+        u = prod(self.elements)
+        cd, bprime, aprime = gcdext(v, u)
         k = c_div(-aprime, v)
         a = aprime + k * v
-        b = bprime - k * self.u
+        b = bprime - k * u
         return a, powmod(self.g, -b, self.n), v
 
 
@@ -229,6 +247,14 @@ def prod(X):
         v = v * x
     return v
 
+def prod_pow(base, X, n):
+    if len(X) < 1000:
+        return powmod(base, prod(X), n)
+    else:
+        split_point = int(len(X) / 2)
+        part_1 = X[:split_point]
+        part_2 = X[split_point:]
+        return prod_pow(prod_pow(base, part_1, n), part_2, n)
 
 def verify_membership(x, cx, c, n):
     return powmod(cx, x, n) == c
@@ -280,3 +306,4 @@ print(verify_membership(primevals[0], mproof, acc_val, test_n))
 print(verify_nonmembership(d, a, primevals[0] + 2, acc_val, test_n, acc.g))
 print(verify_nonmembership(d2, a2, prime_hash(102), acc_val, test_n, acc.g))
 """
+
