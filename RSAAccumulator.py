@@ -7,7 +7,7 @@ import Crypto
 from Crypto import Random
 import numpy as np
 from Crypto.Util import number
-from gmpy2 import gmpy2, powmod, mpz, c_div, gcdext, gcd, c_mod
+from gmpy2 import gmpy2, powmod, mpz, c_div, gcdext, gcd, c_mod, mul
 
 
 def random_prime(bits=2048):
@@ -168,18 +168,20 @@ class Accumulator:
             self.n = rsa_modulus
         self.g = mpz(create_generator(self.n, security))
         self.acc = self.g
-        #self.u = mpz(1)
+        # self.u = mpz(1)
         self.elements = set()
 
     def insert(self, x):
         self.acc = powmod(self.acc, x, self.n)
         self.elements.add(x)
-        #self.u = self.u * x
+        # self.u = self.u * x
 
     def get_membership(self, x):
-        #cx = powmod(self.g, c_div(self.u, x), self.n)
+        # cx = powmod(self.g, c_div(self.u, x), self.n)
+        return prod_pow(self.g, self.elements.difference([x]), self.n)
         cx = self.g
         for ele in self.elements:
+
             if ele != x:
                 cx = powmod(cx, ele, self.n)
         return cx
@@ -203,22 +205,23 @@ class Accumulator:
 
     def get_bulk_membership(self, L):
         guv = self.g
-        #for ele in self.elements - set(L):
+        # for ele in self.elements - set(L):
         #    guv = powmod(guv, ele, self.n)
-        #guv = powmod(self.g, prod(self.elements - set(L)), self.n)
+        # guv = powmod(self.g, prod(self.elements - set(L)), self.n)
         guv = prod_pow(self.g, self.elements - set(L), self.n)
 
         def rec_help(to_partition, current_val):
             if len(to_partition) == 1:
                 return [current_val]
             split_point = int(len(to_partition) / 2)
-            part_1 = to_partition[:split_point]
-            part_2 = to_partition[split_point:]
+            # part_1 = to_partition[:split_point]
+            # part_2 = to_partition[split_point:]
+            part_1, part_2 = partition(to_partition)
             # product computation can be optimized
             val_1 = prod_pow(current_val, part_2, self.n)
             val_2 = prod_pow(current_val, part_1, self.n)
-            #val_1 = powmod(current_val, prod(part_2), self.n)
-            #val_2 = powmod(current_val, prod(part_1), self.n)
+            # val_1 = powmod(current_val, prod(part_2), self.n)
+            # val_2 = powmod(current_val, prod(part_1), self.n)
             if False:
                 val_1 = current_val
                 val_2 = current_val
@@ -241,20 +244,33 @@ class Accumulator:
         return a, powmod(self.g, -b, self.n), v
 
 
+def partition(X):
+    # This seems faster than slicing?
+    split_point = int(len(X) / 2)
+    lst1, lst2 = [], []
+    for i, x in enumerate(X):
+        if i < split_point:
+            lst1.append(x)
+        else:
+            lst2.append(x)
+    return lst1, lst2
+
+
 def prod(X):
     v = mpz(1)
     for x in X:
-        v = v * x
+        v = mul(v, x)
     return v
 
+
 def prod_pow(base, X, n):
+    # Maybe make this a loop instead
     if len(X) < 1000:
         return powmod(base, prod(X), n)
     else:
-        split_point = int(len(X) / 2)
-        part_1 = X[:split_point]
-        part_2 = X[split_point:]
+        part_1, part_2 = partition(X)
         return prod_pow(prod_pow(base, part_1, n), part_2, n)
+
 
 def verify_membership(x, cx, c, n):
     return powmod(cx, x, n) == c
@@ -265,7 +281,11 @@ def verify_nonmembership(d, a, x, c, n, g):
 
 
 def verify_bulk_nonmembership(d, a, X, c, n, g, v):
-    is_divisible = c_mod(v, prod(X)) == 0
+    vprime = prod(X)
+    if vprime == v:
+        is_divisible = True
+    else:
+        is_divisible = c_mod(v, vprime) == 0
     # is_divisible = True
     return powmod(c, a, n) == ((powmod(d, v, n) * g) % n) and is_divisible
 
@@ -306,4 +326,3 @@ print(verify_membership(primevals[0], mproof, acc_val, test_n))
 print(verify_nonmembership(d, a, primevals[0] + 2, acc_val, test_n, acc.g))
 print(verify_nonmembership(d2, a2, prime_hash(102), acc_val, test_n, acc.g))
 """
-

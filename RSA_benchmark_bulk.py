@@ -110,8 +110,8 @@ def RSABenchmark_bulk(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_mo
     return memqueries, nonmemqueries, insertion_time, safe_prime_time, prime_time, memwit_size, nonmemwit_size
 
 
-def run_rsa_benchmarks(hash_security=60):
-    insertions = [4000 * j for j in range(1, 10)]
+def run_rsa_benchmarks_bulk(hash_security=60):
+    insertions = [5000 * j for j in range(1, 10)]
     queries = [2^9]
     reps = 5
     security = 1024
@@ -154,6 +154,7 @@ def read_filesingle(idx1=1):
     #plt.plot(ns, memqueries_proof_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("bulk_memgen.png")
 
     plt.title(f"Avg. membership witness verification time with hash size: {k1}")
     plt.xlabel("Total insertions")
@@ -162,6 +163,7 @@ def read_filesingle(idx1=1):
     #plt.plot(ns, memqueries_verify_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("bulk_memverify.png")
 
     plt.title(f"Insertion time")
     plt.xlabel(f"Total insertions")
@@ -170,6 +172,7 @@ def read_filesingle(idx1=1):
     #plt.plot(ns, insertion_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("insertion_time.png")
 
     plt.title(f"Avg. non-membership witness generation time with hash size: {k1}")
     plt.xlabel("Total insertions")
@@ -178,6 +181,7 @@ def read_filesingle(idx1=1):
     #plt.plot(ns, nonmemqueries_proof_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("bulk_nonmemgen.png")
 
     plt.title(f"Avg. non-membership witness verification time with hash size: {k1}")
     plt.xlabel("Total insertions")
@@ -186,6 +190,7 @@ def read_filesingle(idx1=1):
     #plt.plot(ns, nonmemqueries_verify_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("bulk_nonmemver.png")
 
     plt.title(f"Non-membership witness size with hash size: {k1}")
     plt.plot(ns, nonmemwit_size, label=label_1)
@@ -193,65 +198,6 @@ def read_filesingle(idx1=1):
     plt.legend(loc="upper left")
     plt.show()
 
-
-def read_file(idx1=1, idx2=2):
-    f = open("benchmarks_bulk.txt", "r")
-    text = f.read().split("--START RSA BENCHMARK--\n")
-    measurements = text[idx1].replace("(", "").replace(")", "")
-    measurements2 = text[idx2].replace("(", "").replace(")", "")
-    insertion_times, k1, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec = get_measurements(
-        measurements)
-    insertion_times2, k2, memqueries_proof_times2, memqueries_verify_times2, nonmemqueries_proof_times2, nonmemqueries_verify_times2, nonmemwit_size2, ns2, sec2 = get_measurements(
-        measurements2)
-    assert ns == ns2
-    print(f"RSA security {sec}")
-    plt.title(f"Avg. membership witness generation time with hash size: {k1}")
-    plt.xlabel("Total insertions")
-    plt.ylabel("Time in seconds")
-    label_1 = "Hash size 60"
-    label_2 = "Hash size 35"
-    plt.plot(ns, memqueries_proof_times, label=label_1)
-    plt.plot(ns, memqueries_proof_times2, label=label_2)
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.title(f"Avg. membership witness verification time with hash size: {k1}")
-    plt.xlabel("Total insertions")
-    plt.ylabel("Time in seconds")
-    plt.plot(ns, memqueries_verify_times, label=label_1)
-    plt.plot(ns, memqueries_verify_times2, label=label_2)
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.title(f"Insertion time")
-    plt.xlabel(f"Total insertions")
-    plt.ylabel(f"Total time in seconds")
-    plt.plot(ns, insertion_times, label=label_1)
-    plt.plot(ns, insertion_times2, label=label_2)
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.title(f"Avg. non-membership witness generation time with hash size: {k1}")
-    plt.xlabel("Total insertions")
-    plt.ylabel("Time in seconds")
-    plt.plot(ns, nonmemqueries_proof_times, label=label_1)
-    plt.plot(ns, nonmemqueries_proof_times2, label=label_2)
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.title(f"Avg. non-membership witness verification time with hash size: {k1}")
-    plt.xlabel("Total insertions")
-    plt.ylabel("Time in seconds")
-    plt.plot(ns, nonmemqueries_verify_times, label=label_1)
-    plt.plot(ns, nonmemqueries_verify_times2, label=label_2)
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.title(f"Non-membership witness size with hash size: {k1}")
-    plt.plot(ns, nonmemwit_size, label=label_1)
-    plt.plot(ns, nonmemwit_size2, label=label_2)
-    plt.legend(loc="upper left")
-    plt.show()
 
 
 def get_measurements(measurements):
@@ -283,5 +229,6 @@ def get_measurements(measurements):
         nonmemwit_size.append(float(measurement[13]))
     return insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec
 
-#run_rsa_benchmarks(60)
-read_filesingle(4)
+run_rsa_benchmarks_bulk(60)
+#cProfile.run("run_rsa_benchmarks_bulk()")
+#read_filesingle(20)

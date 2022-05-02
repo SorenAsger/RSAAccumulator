@@ -231,6 +231,7 @@ def read_file(idx1=1, idx2=2):
     plt.plot(ns, memqueries_proof_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("memshipwgen.png")
 
     plt.title(f"Avg. membership witness verification time with hash size: {k1}")
     plt.xlabel("Total insertions")
@@ -239,6 +240,7 @@ def read_file(idx1=1, idx2=2):
     plt.plot(ns, memqueries_verify_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("memshipveri.png")
 
     plt.title(f"Insertion time")
     plt.xlabel(f"Total insertions")
@@ -247,6 +249,7 @@ def read_file(idx1=1, idx2=2):
     plt.plot(ns, insertion_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("insertion_time.png")
 
     plt.title(f"Avg. non-membership witness generation time with hash size: {k1}")
     plt.xlabel("Total insertions")
@@ -255,6 +258,7 @@ def read_file(idx1=1, idx2=2):
     plt.plot(ns, nonmemqueries_proof_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("nonmemshipgen.png")
 
     plt.title(f"Avg. non-membership witness verification time with hash size: {k1}")
     plt.xlabel("Total insertions")
@@ -263,6 +267,7 @@ def read_file(idx1=1, idx2=2):
     plt.plot(ns, nonmemqueries_verify_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
+    plt.savefig("nonmemveri.png")
 
     plt.title(f"Non-membership witness size with hash size: {k1}")
     plt.plot(ns, nonmemwit_size, label=label_1)
