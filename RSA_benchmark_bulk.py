@@ -14,14 +14,9 @@ def RSABenchmark_bulk(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_mo
     nonmemqueries_proof_time = []
     nonmemqueries_verify_time = []
     nonmemqueries_prime_time = []
-    safe_prime_times = []
     nonmemwitness_size = []
     for j in range(reps):
-        start_time = time.time()
         acc = Accumulator(security, rsa_modulus)
-        end_time = time.time()
-        safe_prime_times.append(end_time - start_time)
-        print(f"Safe prime time {end_time - start_time}")
         prime_objects = []
         start_time = time.time()
         for i in range(iters):
@@ -84,7 +79,6 @@ def RSABenchmark_bulk(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_mo
         assert hash_queries == (iters + nonmemqueries)
         # print(f"Nonmemqueries {nonmemqueries} time {end_time-start_time}")
     print(f"Avg prime_times time {sum(prime_times) / reps} avg. per query {sum(prime_times) / (reps * iters)}")
-    print(f"Avg safe_prime_times time {sum(safe_prime_times) / reps}")
     print(f"Avg ins. time {sum(insertion_times) / reps} and avg. per query {sum(insertion_times) / (reps * iters)}")
     print(
         f"Avg mem. prime time {sum(memqueries_prime_time) / reps} avg. per query {sum(memqueries_prime_time) / (reps * memqueries)}")
@@ -103,16 +97,15 @@ def RSABenchmark_bulk(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_mo
     nonmemqueries = sum(nonmemqueries_prime_time) / reps, sum(nonmemqueries_proof_time) / reps, sum(
         nonmemqueries_verify_time) / reps
     insertion_time = sum(insertion_times) / reps
-    safe_prime_time = sum(safe_prime_times) / reps
     prime_time = sum(prime_times) / reps
     memwit_size = sum(memwitness_size) / len(memwitness_size)
     nonmemwit_size = sum(nonmemwitness_size) / len(nonmemwitness_size)
-    return memqueries, nonmemqueries, insertion_time, safe_prime_time, prime_time, memwit_size, nonmemwit_size
+    return memqueries, nonmemqueries, insertion_time, prime_time, memwit_size, nonmemwit_size
 
 
 def run_rsa_benchmarks_bulk(hash_security=60):
     insertions = [5000 * j for j in range(1, 10)]
-    queries = [2^9]
+    queries = [2 ^ 9]
     reps = 5
     security = 1024
     f = open("benchmarksbulk.txt", "a")
@@ -123,8 +116,8 @@ def run_rsa_benchmarks_bulk(hash_security=60):
             query_amount = n
             print(f"Starting run with {n} insertions, {query_amount} queries and hash function ?")
             prime_hash = PrimeHashv2(hash_security)
-            #prime_hash = PrimeHash(hash_security)
-            memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size = RSABenchmark_bulk(
+            # prime_hash = PrimeHash(hash_security)
+            memqueries_time, nonmemqueries_time, insertion_time, prime_time, memwit_size, nonmem_size = RSABenchmark_bulk(
                 n, query_amount, query_amount,
                 reps, prime_hash, rsa_modulus,
                 security=security, )
@@ -134,24 +127,25 @@ def run_rsa_benchmarks_bulk(hash_security=60):
             f.write(text)
     f.close()
 
+
 def read_filesingle(idx1=1):
     f = open("benchmarksbulk.txt", "r")
     text = f.read().split("--START RSA BENCHMARK--\n")
     measurements = text[idx1].replace("(", "").replace(")", "")
-    #measurements2 = text[idx2].replace("(", "").replace(")", "")
+    # measurements2 = text[idx2].replace("(", "").replace(")", "")
     insertion_times, k1, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec = get_measurements(
-        measurements)
-    #insertion_times2, k2, memqueries_proof_times2, memqueries_verify_times2, nonmemqueries_proof_times2, nonmemqueries_verify_times2, nonmemwit_size2, ns2, sec2 = get_measurements(
+        measurements).get_all()
+    # insertion_times2, k2, memqueries_proof_times2, memqueries_verify_times2, nonmemqueries_proof_times2, nonmemqueries_verify_times2, nonmemwit_size2, ns2, sec2 = get_measurements(
     #    measurements2)
-    #assert ns == ns2
+    # assert ns == ns2
     print(f"RSA security {sec}")
     plt.title(f"Avg. membership witness generation time with hash size: {k1}")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     label_1 = "Hash size 60"
-    #label_2 = "Hash size 35"
+    # label_2 = "Hash size 35"
     plt.plot(ns, memqueries_proof_times, label=label_1)
-    #plt.plot(ns, memqueries_proof_times2, label=label_2)
+    # plt.plot(ns, memqueries_proof_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
     plt.savefig("bulk_memgen.png")
@@ -160,7 +154,7 @@ def read_filesingle(idx1=1):
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.plot(ns, memqueries_verify_times, label=label_1)
-    #plt.plot(ns, memqueries_verify_times2, label=label_2)
+    # plt.plot(ns, memqueries_verify_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
     plt.savefig("bulk_memverify.png")
@@ -169,7 +163,7 @@ def read_filesingle(idx1=1):
     plt.xlabel(f"Total insertions")
     plt.ylabel(f"Total time in seconds")
     plt.plot(ns, insertion_times, label=label_1)
-    #plt.plot(ns, insertion_times2, label=label_2)
+    # plt.plot(ns, insertion_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
     plt.savefig("insertion_time.png")
@@ -178,7 +172,7 @@ def read_filesingle(idx1=1):
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.plot(ns, nonmemqueries_proof_times, label=label_1)
-    #plt.plot(ns, nonmemqueries_proof_times2, label=label_2)
+    # plt.plot(ns, nonmemqueries_proof_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
     plt.savefig("bulk_nonmemgen.png")
@@ -187,17 +181,34 @@ def read_filesingle(idx1=1):
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.plot(ns, nonmemqueries_verify_times, label=label_1)
-    #plt.plot(ns, nonmemqueries_verify_times2, label=label_2)
+    # plt.plot(ns, nonmemqueries_verify_times2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
     plt.savefig("bulk_nonmemver.png")
 
     plt.title(f"Non-membership witness size with hash size: {k1}")
     plt.plot(ns, nonmemwit_size, label=label_1)
-    #plt.plot(ns, nonmemwit_size2, label=label_2)
+    # plt.plot(ns, nonmemwit_size2, label=label_2)
     plt.legend(loc="upper left")
     plt.show()
 
+
+class Measurements():
+
+    def __init__(self, insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times,
+                 nonmemqueries_verify_times, nonmemwit_size, ns, sec, avg_hash_size):
+        self.sec = sec
+        self.insertions = ns
+        self.nonmemwit_size = nonmemwit_size
+        self.nonmemqueries_verify_times = nonmemqueries_verify_times
+        self.nonmemqueries_proof_times = nonmemqueries_proof_times
+        self.memqueries_verify_times = memqueries_verify_times
+        self.memqueries_proof_times = memqueries_proof_times
+        self.avg_hash_size = k
+        self.insertion_times = insertion_times
+
+    def get_all(self):
+        return self.insertion_times, self.avg_hash_size, self.memqueries_proof_times, self.memqueries_verify_times, self.nonmemqueries_proof_times, self.nonmemqueries_verify_times, self.nonmemwit_size, self.insertions, self.sec
 
 
 def get_measurements(measurements):
@@ -227,8 +238,11 @@ def get_measurements(measurements):
         insertion_times.append(float(measurement[8]) / queries)
         memwit_size.append(float(measurement[12]))
         nonmemwit_size.append(float(measurement[13]))
-    return insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec
+
+    return Measurements(insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times,
+                        nonmemqueries_verify_times, nonmemwit_size, ns, sec)
+
 
 run_rsa_benchmarks_bulk(60)
-#cProfile.run("run_rsa_benchmarks_bulk()")
-#read_filesingle(20)
+# cProfile.run("run_rsa_benchmarks_bulk()")
+# read_filesingle(20)

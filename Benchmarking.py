@@ -2,11 +2,11 @@ import random
 import time
 from MerkleTree import MerkleTree
 from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, PrimeHash, verify_membership, verify_nonmembership, \
-    PrimeHashv2
+    PrimeHashv2, verify_bulk_nonmembership
 from TestObject import TestObject
 from Verification import verify
 import matplotlib.pyplot as plt
-
+# Sorry if you are reading this...
 
 def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
     cons_times = []
@@ -77,6 +77,13 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus
     nonmemqueries_prime_time = []
     safe_prime_times = []
     nonmemwitness_size = []
+    bulk_sizes = [100, 1000, 5000, iters]
+    bulk_membership_gen = [[] for _ in range(4)]  # 100, 1000, 10000? n
+    bulk_membership_ver = [[] for _ in range(4)]  # 100, 1000, 10000? n
+    bulk_membership = [[] for _ in range(4)]  # 100, 1000, 10000? n
+    bulk_nonmembership_gen = [[] for _ in range(4)]  # 100, 1000, 10000? n
+    bulk_nonmembership_ver = [[] for _ in range(4)]  # 100, 1000, 10000? n
+    bulk_nonmembership = [[] for _ in range(4)]  # 100, 1000, 10000? n
     for j in range(reps):
         start_time = time.time()
         acc = Accumulator(security, rsa_modulus)
@@ -119,6 +126,31 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus
             witness = mem_witnesses[i]
             assert verify_membership(xprime, witness, acc.acc, acc.n)
         end_time = time.time()
+
+        for idx, bulk_mem in enumerate(bulk_membership):
+            start_time = time.time()
+            witnesses = acc.get_bulk_membership(mem_primes[:bulk_sizes[idx]])
+            end_time = time.time()
+            bulk_membership_gen[idx].append(end_time - start_time)
+            start_time = time.time()
+            for x, w in witnesses:
+                assert verify_membership(x, w, acc.acc, acc.n)
+            end_time = time.time()
+            bulk_membership_ver[idx].append(end_time - start_time)
+        nonmem_primes = []
+        for i in range(iters):
+            nonmem_primes.append(prime_hash.prime_hash(i * 2 + 1))
+
+        for idx, bulk_mem in enumerate(bulk_membership):
+            start_time = time.time()
+            a, d, v = acc.get_bulk_nonmembership(nonmem_primes[:bulk_sizes[idx]])
+            end_time = time.time()
+            bulk_nonmembership_gen[idx].append(end_time - start_time)
+            start_time = time.time()
+            verify_bulk_nonmembership(d, a, nonmem_primes[:bulk_sizes[idx]], acc.acc, acc.n, acc.g, v)
+            end_time = time.time()
+            bulk_nonmembership_ver[idx].append(end_time - start_time)
+        end_time = time.time()
         memqueries_verify_time.append(end_time - start_time)
         print(f"Memquery {memqueries} verify time {end_time - start_time}")
         start_time = time.time()
@@ -154,7 +186,7 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus
         print(sum(prime_hash.prime_map.values()) / hash_queries)
         print(hash_queries)
         print(iters + nonmemqueries)
-        assert hash_queries == (iters + nonmemqueries)
+        #assert hash_queries == (iters + nonmemqueries)
         # print(f"Nonmemqueries {nonmemqueries} time {end_time-start_time}")
     print(f"Avg prime_times time {sum(prime_times) / reps} avg. per query {sum(prime_times) / (reps * iters)}")
     print(f"Avg safe_prime_times time {sum(safe_prime_times) / reps}")
@@ -180,17 +212,17 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus
     prime_time = sum(prime_times) / reps
     memwit_size = sum(memwitness_size) / len(memwitness_size)
     nonmemwit_size = sum(nonmemwitness_size) / len(nonmemwitness_size)
-    return memqueries, nonmemqueries, insertion_time, safe_prime_time, prime_time, memwit_size, nonmemwit_size
+    return memqueries, nonmemqueries, insertion_time, safe_prime_time, prime_time, memwit_size, nonmemwit_size, bulk_membership_gen, bulk_membership_ver, bulk_nonmembership_gen, bulk_nonmembership_ver
 
 
 # MerkleTreeBenchmark(100000, 10000, 10000, 5)
 # RSABenchmark(10000, 800, 800, 5, security=128)
 
 def run_rsa_benchmarks(hash_security=60):
-    insertions = [2 ** j for j in range(7, 15)]
+    insertions = [5000 * j for j in range(1, 13)]
     queries = [10]
     reps = 5
-    security = 1024
+    security = 2048
     f = open("benchmarks.txt", "a")
     f.write("--START RSA BENCHMARK--\n")
     rsa_modulus = generate_safe_RSA_modulus(security)
@@ -198,17 +230,53 @@ def run_rsa_benchmarks(hash_security=60):
         for j in queries:
             query_amount = j
             print(f"Starting run with {n} insertions, {query_amount} queries and hash function ?")
-            # prime_hash = PrimeHashv2(hash_security)
-            prime_hash = PrimeHash(hash_security)
-            memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size = RSABenchmark(
+            prime_hash = PrimeHashv2(hash_security)
+            # prime_hash = PrimeHash(hash_security)
+            memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size, bulk_membership_gen, bulk_membership_ver, bulk_nonmembership_gen, bulk_nonmembership_ver = RSABenchmark(
                 n, query_amount, query_amount,
                 reps, prime_hash, rsa_modulus,
                 security=security, )
+            tkst = ""
+            for time in bulk_membership_gen:
+                tkst += str(time) + ", "
+            for time in bulk_membership_ver:
+                tkst += str(time) + ", "
+            for time in bulk_nonmembership_gen:
+                tkst += str(time) + ", "
+            for time in bulk_nonmembership_ver:
+                tkst += str(time) + ", "
+
             text = f"{n}, {query_amount}, {memqueries_time}, {nonmemqueries_time}, {insertion_time}, {prime_time}, {security}, {hash_security}, " \
-                   f"{memwit_size}, {nonmem_size},\n"
+                   f"{memwit_size}, {nonmem_size}, {tkst}\n"
             print(text)
             f.write(text)
     f.close()
+
+
+def read_benchmarks(idx):
+    f = open("benchmarks.txt", "r")
+    text = f.read().split("--START RSA BENCHMARK--\n")
+    measurements = text[idx].replace("(", "").replace(")", "")
+    f.close()
+    return get_measurements(measurements)
+
+
+class Measurements():
+
+    def __init__(self, insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times,
+                 nonmemqueries_verify_times, nonmemwit_size, ns, sec, avg_hash_size):
+        self.sec = sec
+        self.insertions = ns
+        self.nonmemwit_size = nonmemwit_size
+        self.nonmemqueries_verify_times = nonmemqueries_verify_times
+        self.nonmemqueries_proof_times = nonmemqueries_proof_times
+        self.memqueries_verify_times = memqueries_verify_times
+        self.memqueries_proof_times = memqueries_proof_times
+        self.avg_hash_size = k
+        self.insertion_times = insertion_times
+
+    def get_all(self):
+        return self.insertion_times, self.avg_hash_size, self.memqueries_proof_times, self.memqueries_verify_times, self.nonmemqueries_proof_times, self.nonmemqueries_verify_times, self.nonmemwit_size, self.insertions, self.sec
 
 
 def read_file(idx1=1, idx2=2):
@@ -217,9 +285,9 @@ def read_file(idx1=1, idx2=2):
     measurements = text[idx1].replace("(", "").replace(")", "")
     measurements2 = text[idx2].replace("(", "").replace(")", "")
     insertion_times, k1, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec = get_measurements(
-        measurements)
+        measurements).get_all()
     insertion_times2, k2, memqueries_proof_times2, memqueries_verify_times2, nonmemqueries_proof_times2, nonmemqueries_verify_times2, nonmemwit_size2, ns2, sec2 = get_measurements(
-        measurements2)
+        measurements2).get_all()
     assert ns == ns2
     print(f"RSA security {sec}")
     plt.title(f"Avg. membership witness generation time with hash size: {k1}")
@@ -298,8 +366,18 @@ def get_measurements(measurements):
         insertion_times.append(float(measurement[8]))
         memwit_size.append(float(measurement[12]))
         nonmemwit_size.append(float(measurement[13]))
-    return insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times, nonmemqueries_verify_times, nonmemwit_size, ns, sec
+    return Measurements(insertion_times, k, memqueries_proof_times, memqueries_verify_times, nonmemqueries_proof_times,
+                        nonmemqueries_verify_times, nonmemwit_size, ns, sec)
 
 
-# run_rsa_benchmarks(30)
-read_file(6)
+def make_plots():
+    # We want to plot hash size 40, 80
+    # Bulk queries for 10, 100, 1000 and n
+    pass
+    measurement40 = read_benchmarks(1)
+    measurement80 = read_benchmarks(2)
+    assert measurement40.insertions == measurement80.insertions
+
+
+run_rsa_benchmarks(60)
+# read_file(6)

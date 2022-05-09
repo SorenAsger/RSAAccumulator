@@ -50,5 +50,18 @@ class RSAAccumulatorTest(unittest.TestCase):
         a, d, v = acc.get_bulk_nonmembership(bulk)
         assert verify_bulk_nonmembership(d, a, bulk, acc.acc, acc.n, acc.g, v)
 
+    def test_non_membershipv2(self):
+        prime_hash = PrimeHashv2(100)
+        acc = Accumulator(256)
+        for i in range(250):
+            x = prime_hash.prime_hash(i)
+            acc.insert(x)
+        queries = [prime_hash.prime_hash(i) for i in range(250, 275)]
+        for query in queries:
+            a, d = acc.nonmembershipv2(query)
+            print(a, d)
+            print(len(bin(a)) + len(bin(d)))
+            assert verify_nonmembership(d, a, query, acc.acc, acc.n, acc.g)
+
 if __name__ == '__main__':
     unittest.main()
