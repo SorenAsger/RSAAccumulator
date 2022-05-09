@@ -1,7 +1,7 @@
 import time
 import matplotlib.pyplot as plt
-from RSAAccumulator import Accumulator, verify_membership, verify_bulk_nonmembership, PrimeHash, \
-    generate_safe_RSA_modulus, PrimeHashv2
+from RSAAccumulator import Accumulator, verify_membership, verify_bulk_nonmembership, generate_safe_RSA_modulus
+from prime_hash import PrimeHashv2, PrimeHash
 
 
 def RSABenchmark_bulk(iters, memqueries, nonmemqueries, reps, prime_hash, rsa_modulus, security=2048):

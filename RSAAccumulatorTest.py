@@ -1,6 +1,7 @@
 import unittest
 
-from RSAAccumulator import PrimeHashv2, Accumulator, verify_membership, verify_nonmembership, verify_bulk_nonmembership
+from RSAAccumulator import Accumulator, verify_membership, verify_nonmembership, verify_bulk_nonmembership
+from prime_hash import PrimeHashv2
 
 
 class RSAAccumulatorTest(unittest.TestCase):

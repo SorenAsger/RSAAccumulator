@@ -1,7 +1,7 @@
 import random
 import time
 
-from RSAAccumulator import PrimeHash, PrimeHashv2
+from prime_hash import PrimeHashv2, PrimeHash
 import matplotlib.pyplot as plt
 
 

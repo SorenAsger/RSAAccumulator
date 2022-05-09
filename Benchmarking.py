@@ -1,8 +1,9 @@
 import random
 import time
 from MerkleTree import MerkleTree
-from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, PrimeHash, verify_membership, verify_nonmembership, \
-    PrimeHashv2, verify_bulk_nonmembership
+from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, verify_membership, verify_nonmembership, \
+    verify_bulk_nonmembership
+from prime_hash import PrimeHashv2, PrimeHash
 from TestObject import TestObject
 from Verification import verify
 import matplotlib.pyplot as plt

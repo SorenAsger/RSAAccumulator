@@ -18,7 +18,8 @@ import sys
 import timeit
 from random import random
 
-from RSAAccumulator import PrimeHashv2, Accumulator, generate_safe_RSA_modulus
+from RSAAccumulator import Accumulator, generate_safe_RSA_modulus
+from prime_hash import PrimeHashv2
 
 
 def get_avg_time(n, interval_length, function, random_writes=False, input_factor=1):

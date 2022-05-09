@@ -4,12 +4,13 @@ import time
 
 from gmpy2 import powmod, mpz
 
-from RSAAccumulator import PrimeHashv2, prod_pow, random_prime, create_generator, prod, Accumulator
+from RSAAccumulator import prod_pow, random_prime, create_g, prod, Accumulator
+from prime_hash import PrimeHashv2
 
 h = PrimeHashv2(60)
 hashes = [mpz(h.prime_hash(i)) for i in range(2**17)]
 n = mpz(random_prime(1024) * random_prime(1024))
-g = mpz(create_generator(n, 2048))
+g = mpz(create_g(n, 2048))
 cutoffs = [10**i for i in range(6)]
 times = [0 for _ in cutoffs]
 reps = 5
