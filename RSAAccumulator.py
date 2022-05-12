@@ -22,7 +22,7 @@ def random_safe_prime(bits=2048):
 def generate_safe_RSA_modulus(bits=2048):
     p, pp = random_safe_prime(bits // 2)
     q, qp = random_safe_prime(bits // 2)
-    return p * q
+    return p * q, p, q
 
 
 def create_g(n, security):
@@ -49,7 +49,16 @@ class Accumulator:
         self.elements.append(x)
         self.u = self.u * x
 
+    def remove(self, x, new_acc):
+        self.acc = new_acc
+        self.elements.remove(x)
+        self.u = c_div(self.u, x),
+
+
     def get_membership(self, x):
+        return powmod(self.g, c_div(self.u, x), self.n)
+
+    def get_membershipv2(self, x):
         return powmod(self.g, c_div(self.u, x), self.n)
 
     def get_nonmembership(self, x):
@@ -70,7 +79,7 @@ class Accumulator:
         return a, d
 
     def get_bulk_membership(self, L):
-        guv = prod_pow(self.g, set(self.elements) - set(L), self.n)
+        guv = powmod(self.g, c_div(self.u, prod(L)), self.n)
 
         def rec_help(to_partition, current_val):
             if len(to_partition) == 1:
@@ -103,6 +112,11 @@ class AccumulatorNoU(Accumulator):
         self.acc = powmod(self.acc, x, self.n)
         self.elements.append(x)
 
+    def delete(self, x, new_acc):
+        self.acc = new_acc
+        # New acc should be computed efficiently
+        self.elements.remove(x)
+
     def get_membership(self, x):
         prod_pow(self.g, set(self.elements).difference([x]), self.n)
 
@@ -124,6 +138,29 @@ class AccumulatorNoU(Accumulator):
             pr = powmod(pr, ele, self.n)
         gmb = powmod(b1, -1, self.n)
         return a1, gmb
+
+    def get_bulk_membership(self, L):
+        guv = prod_pow(self.g, set(self.elements) - set(L), self.n)
+
+        def rec_help(to_partition, current_val):
+            if len(to_partition) == 1:
+                return [current_val]
+            part_1, part_2 = partition(to_partition)
+            val_1 = prod_pow(current_val, part_2, self.n)
+            val_2 = prod_pow(current_val, part_1, self.n)
+            return rec_help(part_1, val_1) + rec_help(part_2, val_2)
+
+        witnesses = rec_help(L, guv)
+        return list(zip(L, witnesses))
+
+    def get_bulk_nonmembership(self, L):
+        v = prod(L)
+        u = prod(self.elements)
+        cd, bprime, aprime = gcdext(v, u)
+        k = c_div(-aprime, v)
+        a = aprime + k * v
+        b = bprime - k * u
+        return a, powmod(self.g, -b, self.n), v
 
 
 def partition(X):

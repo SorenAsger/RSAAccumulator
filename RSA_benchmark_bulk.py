@@ -110,7 +110,7 @@ def run_rsa_benchmarks_bulk(hash_security=60):
     security = 1024
     f = open("benchmarksbulk.txt", "a")
     f.write("--START RSA BENCHMARK--\n")
-    rsa_modulus = generate_safe_RSA_modulus(security)
+    rsa_modulus, _, _ = generate_safe_RSA_modulus(security)
     for n in insertions:
         for j in queries:
             query_amount = n
