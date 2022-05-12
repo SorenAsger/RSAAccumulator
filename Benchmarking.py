@@ -194,7 +194,7 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc, phin, 
             ele = prime_objects[i]
             _, a, b = gcdext(ele, phin)
             # a*ele + b * phin = 1
-            new_acc = powmod(acc.accm, ele, acc.n)
+            new_acc = powmod(acc.acc, ele, acc.n)
             acc.remove(ele, new_acc)
         end_time = time.time()
         deletion_times.append(end_time - start_time)
