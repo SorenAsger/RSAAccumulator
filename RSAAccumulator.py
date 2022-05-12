@@ -52,7 +52,7 @@ class Accumulator:
     def remove(self, x, new_acc):
         self.acc = new_acc
         self.elements.remove(x)
-        self.u = c_div(self.u, x),
+        self.u = c_div(self.u, x)
 
 
     def get_membership(self, x):

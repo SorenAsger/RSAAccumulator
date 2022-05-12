@@ -1,3 +1,4 @@
+import copy
 import random
 import time
 
@@ -73,7 +74,7 @@ def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
 
 # There really should be a class for all these measurements that should be used...
 # but I am way too lazy
-def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc, phin, security=2048):
+def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phin, security=2048):
     prime_times = []
     insertion_times = []
     deletion_times = []
@@ -93,6 +94,7 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc, phin, 
     bulk_nonmembership_gen = [[] for _ in range(4)]  # 100, 1000, 10000? n
     bulk_nonmembership_ver = [[] for _ in range(4)]  # 100, 1000, 10000? n
     for j in range(reps):
+        acc = copy.deepcopy(acc_og)
         start_time = time.time()
         end_time = time.time()
         safe_prime_times.append(end_time - start_time)
@@ -131,6 +133,7 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc, phin, 
         for i in range(memqueries + verify_extra):
             xprime = mem_primes[i % memqueries]
             witness = mem_witnesses[i % memqueries]
+            #print("HI")
             assert verify_membership(xprime, witness, acc.acc, acc.n)
         end_time = time.time()
         memqueries_verify_time.append(end_time - start_time)
@@ -240,7 +243,7 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc, phin, 
 def run_rsa_benchmarks(prime_hash, label, acc, phin):
     insertions = [5000 * j for j in range(1, 20)]
     queries = [1]
-    reps = 4
+    reps = 5
     security = 2048
     f = open("benchmarks.txt", "a")
     f.write("--START RSA BENCHMARK--\n")
@@ -250,9 +253,10 @@ def run_rsa_benchmarks(prime_hash, label, acc, phin):
             print(f"Starting run with {n} insertions, {query_amount} queries and hash function ?")
             # prime_hash = PrimeHash(hash_security)
             # THIS IS SO DISGUSTING I AM SORRY
+            acc_copy = copy.deepcopy(acc)
             memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size, bulk_membership_gen, bulk_membership_ver, bulk_nonmembership_gen, bulk_nonmembership_ver, avg_hash_size, deletion_time = RSABenchmark(
                 n, query_amount, query_amount,
-                reps, prime_hash, acc, phin,
+                reps, prime_hash, acc_copy, phin,
                 security=security)
             tkst = ""
             for time in bulk_membership_gen:
@@ -395,8 +399,9 @@ def make_plots():
     measurement80 = read_benchmarks(2)
     assert measurement40.insertions == measurement80.insertions
 
-
+print("Generating safe RSA modulus")
 rsa_modulus, p, q = generate_safe_RSA_modulus(2048)
+print("Generation done")
 phin = (p-1)*(q-1)
 acc1 = Accumulator(2048, rsa_modulus)
 acc2 = AccumulatorNoU(2048, rsa_modulus)
