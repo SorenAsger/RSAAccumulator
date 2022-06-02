@@ -1,3 +1,4 @@
+import cProfile
 import time
 import matplotlib.pyplot as plt
 from RSAAccumulator import Accumulator, verify_membership, verify_bulk_nonmembership, generate_safe_RSA_modulus
@@ -244,5 +245,5 @@ def get_measurements(measurements):
 
 
 run_rsa_benchmarks_bulk(60)
-# cProfile.run("run_rsa_benchmarks_bulk()")
+cProfile.run("run_rsa_benchmarks_bulk()")
 # read_filesingle(20)

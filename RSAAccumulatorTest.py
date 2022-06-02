@@ -22,11 +22,12 @@ class RSAAccumulatorTest(unittest.TestCase):
     def test_bulk_membership(self):
         prime_hash = PrimeHashv2(100)
         acc = Accumulator(256)
-        for i in range(25):
+        for i in range(1000):
             x = prime_hash.prime_hash(i)
             acc.insert(x)
-        bulk = [prime_hash.prime_hash(i) for i in range(10)]
+        bulk = [prime_hash.prime_hash(i) for i in range(1000)]
         witnesses = acc.get_bulk_membership(bulk)
+        assert len(witnesses) == len(bulk)
         for x, cx in witnesses:
             assert verify_membership(x, cx, acc.acc, acc.n)
 

@@ -36,7 +36,8 @@ class Accumulator:
 
     def __init__(self, security, rsa_modulus=None):
         if rsa_modulus is None:
-            self.n = mpz(generate_safe_RSA_modulus(security))
+            n, _, _ = generate_safe_RSA_modulus(security)
+            self.n = mpz(n)
         else:
             self.n = rsa_modulus
         self.g = mpz(create_g(self.n, security))
@@ -58,8 +59,6 @@ class Accumulator:
     def get_membership(self, x):
         return powmod(self.g, c_div(self.u, x), self.n)
 
-    def get_membershipv2(self, x):
-        return powmod(self.g, c_div(self.u, x), self.n)
 
     def get_nonmembership(self, x):
         # u = prod(self.elements)
@@ -106,11 +105,12 @@ class AccumulatorNoU(Accumulator):
 
     def __init__(self, security, rsa_modulus=None):
         super(AccumulatorNoU, self).__init__(security, rsa_modulus)
-        self.elements = []
+        self.elements = set()
 
     def insert(self, x):
-        self.acc = powmod(self.acc, x, self.n)
-        self.elements.append(x)
+        if x not in self.elements:
+            self.acc = powmod(self.acc, x, self.n)
+            self.elements.add(x)
 
     def delete(self, x, new_acc):
         self.acc = new_acc
@@ -118,13 +118,14 @@ class AccumulatorNoU(Accumulator):
         self.elements.remove(x)
 
     def get_membership(self, x):
-        prod_pow(self.g, set(self.elements).difference([x]), self.n)
+        return prod_pow(self.g, self.elements.difference([x]), self.n)
 
     def get_nonmembership(self, x):
-        _, a1, b1 = gcdext(self.elements[0], x)
+        elements = list(self.elements)
+        _, a1, b1 = gcdext(elements[0], x)
         b1 = powmod(self.g, b1, self.n)
-        pr = powmod(self.g, self.elements[0], self.n)
-        for ele in self.elements[1:]:
+        pr = powmod(self.g, elements[0], self.n)
+        for ele in elements[1:]:
             _, a2, b2 = gcdext(ele, x)
             # minimize a1 * a2 + kx
             # k = -a1 * a2 / x
@@ -140,7 +141,9 @@ class AccumulatorNoU(Accumulator):
         return a1, gmb
 
     def get_bulk_membership(self, L):
-        guv = prod_pow(self.g, set(self.elements) - set(L), self.n)
+        L = set(L)
+        guv = prod_pow(self.g, self.elements - L, self.n)
+
 
         def rec_help(to_partition, current_val):
             if len(to_partition) == 1:
@@ -154,6 +157,7 @@ class AccumulatorNoU(Accumulator):
         return list(zip(L, witnesses))
 
     def get_bulk_nonmembership(self, L):
+        L = set(L)
         v = prod(L)
         u = prod(self.elements)
         cd, bprime, aprime = gcdext(v, u)
@@ -201,6 +205,7 @@ def verify_nonmembership(d, a, x, c, n, g):
 
 
 def verify_bulk_nonmembership(d, a, X, c, n, g, v):
+    X = set(X)
     vprime = prod(X)
     if vprime == v:
         is_divisible = True
