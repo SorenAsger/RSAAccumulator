@@ -1,7 +1,7 @@
 import random
 import time
 
-from prime_hash import PrimeHashv2, PrimeHash
+from prime_hash import RandomOraclePrimeHash, PrimeHash
 import matplotlib.pyplot as plt
 
 
@@ -18,8 +18,6 @@ def hash_to_collision(prime_hash, rand_num=True):
             return i
         hash_map[hval] = 1
         i += 1
-        # print(i)
-        # print(len(hash_map))
         if len(hash_map) < i:
             return i
 
@@ -32,7 +30,7 @@ def test_prime_hash1():
         iterations = []
         for _ in range(reps):
             print(f"Testing {sec}")
-            prime_hash1 = PrimeHashv2(sec)
+            prime_hash1 = RandomOraclePrimeHash(sec)
             iterations_before_collision = hash_to_collision(prime_hash1)
             print(iterations_before_collision)
             iterations.append(iterations_before_collision)
@@ -60,6 +58,8 @@ def test_time_primev1():
             hsh = PrimeHash(bit_length)
             time_elapsed = test_prime_hash_time(hsh, 1000)
             measurements.append(time_elapsed)
+        avg_length =sum(hsh.prime_map.values())/len(hsh.prime_map)
+        print(avg_length)
         f.write(f"{bit_length}, {sum(measurements)/reps}\n")
     f.close()
 
@@ -73,9 +73,11 @@ def test_time_primev2():
         measurements = []
         for rep in range(reps):
             print(f"Testing length: {bit_length}")
-            hsh = PrimeHashv2(bit_length)
+            hsh = RandomOraclePrimeHash(bit_length)
             time_elapsed = test_prime_hash_time(hsh, 1000)
             measurements.append(time_elapsed)
+        avg_length =sum(hsh.prime_map.values())/len(hsh.prime_map)
+        print(avg_length)
         f.write(f"{bit_length}, {sum(measurements)/reps}\n")
     f.close()
 
@@ -114,11 +116,13 @@ def read_file_hash_time(filename, title, idx=1):
         k = int(s[0])
         avg = float(s[1])
         ks.append(k)
-        avgs.append(avg)
-    plt.title(f"Hash performance for {title}")
-    plt.xlabel("Bitlength of hash")
-    plt.ylabel("Time for 1000 hashes")
+        avgs.append(avg / 1000)
+    plt.title(f"Avg. hash time for {title}")
+    plt.xlabel("k - approximately the bit-length of the output")
+    plt.ylabel("seconds")
+    plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
     plt.plot(ks, avgs)
+    plt.savefig(title)
     plt.show()
 
 
@@ -132,9 +136,9 @@ def run_hash_benchmark():
     f.close()
 
 
-read_file()
+#read_file()
 
 #test_time_primev1()
-#test_time_primev2()
-read_file_hash_time("prime_hash_time.txt", "first hash", 6)
-read_file_hash_time("prime_hash_timev2.txt", "second hash", 3)
+test_time_primev2()
+#read_file_hash_time("prime_hash_time.txt", "universal prime hash", 2)
+#read_file_hash_time("prime_hash_timev2.txt", "random oracle prime hash", 1)

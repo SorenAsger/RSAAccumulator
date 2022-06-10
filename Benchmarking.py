@@ -7,13 +7,14 @@ from gmpy2 import powmod, gcdext
 from MerkleTree import MerkleTree
 from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, verify_membership, verify_nonmembership, \
     verify_bulk_nonmembership, AccumulatorNoU
-from prime_hash import PrimeHashv2, PrimeHash
+from prime_hash import RandomOraclePrimeHash, PrimeHash
 from TestObject import TestObject
 from Verification import verify
 import matplotlib.pyplot as plt
 
 
 # Sorry if you are reading this...
+# This code has not been cleaned
 
 def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
     cons_times = []
@@ -72,9 +73,10 @@ def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
         f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps} avg per query {sum(nonmemqueries_verify_time) / (reps * nonmemqueries)}")
 
 
-# There really should be a class for all these measurements that should be used...
+# This really should use the measurement class
 # but I am way too lazy
-def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phin, security=2048):
+# As we will not be evaluated on the code --- this is ugly and we didnt bother refactoring it
+def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phin):
     prime_times = []
     insertion_times = []
     deletion_times = []
@@ -90,16 +92,12 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
     verify_extra = 100
     bulk_sizes = [100, iters]
     bulks_lens = len(bulk_sizes)
-    bulk_membership_gen = [[] for _ in range(bulks_lens)]  # 100, 1000, 10000? n
-    bulk_membership_ver = [[] for _ in range(bulks_lens)]  # 100, 1000, 10000? n
-    bulk_nonmembership_gen = [[] for _ in range(bulks_lens)]  # 100, 1000, 10000? n
-    bulk_nonmembership_ver = [[] for _ in range(bulks_lens)]  # 100, 1000, 10000? n
+    bulk_membership_gen = [[] for _ in range(bulks_lens)]
+    bulk_membership_ver = [[] for _ in range(bulks_lens)]
+    bulk_nonmembership_gen = [[] for _ in range(bulks_lens)]
+    bulk_nonmembership_ver = [[] for _ in range(bulks_lens)]
     for j in range(reps):
         acc = copy.deepcopy(acc_og)
-        start_time = time.time()
-        end_time = time.time()
-        safe_prime_times.append(end_time - start_time)
-        print(f"Safe prime time {end_time - start_time}")
         prime_objects = []
         start_time = time.time()
         for i in range(iters):
@@ -112,15 +110,11 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
             acc.insert(prime_objects[i])
         end_time = time.time()
         insertion_times.append(end_time - start_time)
-        print(f"Insertion time {end_time - start_time}")
         start_time = time.time()
         mem_witnesses = []
-        mem_primes = []
-        for i in range(memqueries):
-            mem_primes.append(prime_hash.prime_hash(i * 2))
+        mem_primes = prime_objects
         end_time = time.time()
         memqueries_prime_time.append(end_time - start_time)
-        print(f"Memquery {memqueries} prime time {end_time - start_time}")
         start_time = time.time()
         for i in range(memqueries):
             xprime = mem_primes[i]
@@ -128,17 +122,14 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
             mem_witnesses.append(witness)
             memwitness_size.append(len(bin(witness)))
         end_time = time.time()
-        print(f"Memquery {memqueries} proof time {end_time - start_time}")
         memqueries_proof_time.append(end_time - start_time)
         start_time = time.time()
         for i in range(memqueries + verify_extra):
             xprime = mem_primes[i % memqueries]
             witness = mem_witnesses[i % memqueries]
-            #print("HI")
             assert verify_membership(xprime, witness, acc.acc, acc.n)
         end_time = time.time()
         memqueries_verify_time.append(end_time - start_time)
-        print(f"Memquery {memqueries} verify time {end_time - start_time}")
 
         for idx in range(bulks_lens):
             start_time = time.time()
@@ -163,7 +154,6 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
             verify_bulk_nonmembership(d, a, nonmem_primes[:bulk_sizes[idx]], acc.acc, acc.n, acc.g, v)
             end_time = time.time()
             bulk_nonmembership_ver[idx].append(end_time - start_time)
-
         start_time = time.time()
         prime_hashes = []
         for i in range(nonmemqueries):
@@ -171,9 +161,7 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
             prime_hashes.append(xprime)
         end_time = time.time()
         prime_time = end_time - start_time
-        print(f"Nonmemquery prime time {prime_time}")
         nonmemqueries_prime_time.append(prime_time)
-
         start_time = time.time()
         nonmem_witnesses = []
         for i in range(nonmemqueries):
@@ -183,47 +171,23 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
             nonmemwitness_size.append(len(bin(a)) + len(bin(d)))
         end_time = time.time()
         nonmemqueries_proof_time.append(end_time - start_time)
-        print(f"Nonmemquery proof time {end_time - start_time}")
         start_time = time.time()
         for i in range(nonmemqueries + verify_extra):
             xprime = prime_hashes[i % nonmemqueries]
             a, d = nonmem_witnesses[i % nonmemqueries]
             assert verify_nonmembership(d, a, xprime, acc.acc, acc.n, acc.g)
         end_time = time.time()
-        print(f"Nonmemquery verify time {end_time - start_time}")
         nonmemqueries_verify_time.append(end_time - start_time)
-
         start_time = time.time()
         for i in range(iters):
             ele = prime_objects[i]
             _, a, b = gcdext(ele, phin)
-            # a*ele + b * phin = 1
+            # a*ele + b * phin = 1 so we delete
             new_acc = powmod(acc.acc, ele, acc.n)
             acc.remove(ele, new_acc)
         end_time = time.time()
         deletion_times.append(end_time - start_time)
         hash_queries = len(prime_hash.prime_map)
-        print("hash queries")
-        print("avg hash size", sum(prime_hash.prime_map.values()) / hash_queries)
-        print(hash_queries)
-        print(iters + nonmemqueries)
-        # assert hash_queries == (iters + nonmemqueries)
-        # print(f"Nonmemqueries {nonmemqueries} time {end_time-start_time}")
-    print(f"Avg prime_times time {sum(prime_times) / reps} avg. per query {sum(prime_times) / (reps * iters)}")
-    print(f"Avg safe_prime_times time {sum(safe_prime_times) / reps}")
-    print(f"Avg ins. time {sum(insertion_times) / reps} and avg. per query {sum(insertion_times) / (reps * iters)}")
-    print(
-        f"Avg mem. prime time {sum(memqueries_prime_time) / reps} avg. per query {sum(memqueries_prime_time) / (reps * memqueries)}")
-    print(
-        f"Avg mem. proof time {sum(memqueries_proof_time) / reps} avg. per query {sum(memqueries_proof_time) / (reps * memqueries)}")
-    print(
-        f"Avg mem. verify time {sum(memqueries_verify_time) / reps} avg. per query {sum(memqueries_verify_time) / (reps * (memqueries + verify_extra))}")
-    print(
-        f"Avg nonmem. prime time {sum(nonmemqueries_prime_time) / reps} avg. per query {sum(nonmemqueries_prime_time) / (reps * nonmemqueries)}")
-    print(
-        f"Avg nonmem. proof time {sum(nonmemqueries_proof_time) / reps} avg. per query {sum(nonmemqueries_proof_time) / (reps * nonmemqueries)}")
-    print(
-        f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps} avg. per query {sum(nonmemqueries_verify_time) / (reps * (nonmemqueries + verify_extra))}")
     memqueries = sum(memqueries_prime_time) / reps, sum(memqueries_proof_time) / reps, sum(
         memqueries_verify_time) /  (reps)
     nonmemqueries = sum(nonmemqueries_prime_time) / reps, sum(nonmemqueries_proof_time) / reps, sum(
@@ -237,9 +201,6 @@ def RSABenchmark(iters, memqueries, nonmemqueries, reps, prime_hash, acc_og, phi
     avg_hash_size = sum(prime_hash.prime_map.values()) / hash_queries
     return memqueries, nonmemqueries, insertion_time, safe_prime_time, prime_time, memwit_size, nonmemwit_size, bulk_membership_gen, bulk_membership_ver, bulk_nonmembership_gen, bulk_nonmembership_ver, avg_hash_size, deletion_time
 
-
-# MerkleTreeBenchmark(100000, 10000, 10000, 5)
-# RSABenchmark(10000, 800, 800, 5, security=128)
 
 def run_rsa_benchmarks(prime_hash, label, acc, phin):
     insertions = [10000 * j for j in range(1, 11)]
@@ -257,8 +218,7 @@ def run_rsa_benchmarks(prime_hash, label, acc, phin):
             acc_copy = copy.deepcopy(acc)
             memqueries_time, nonmemqueries_time, insertion_time, safe_prime_time, prime_time, memwit_size, nonmem_size, bulk_membership_gen, bulk_membership_ver, bulk_nonmembership_gen, bulk_nonmembership_ver, avg_hash_size, deletion_time = RSABenchmark(
                 n, query_amount, query_amount,
-                reps, prime_hash, acc_copy, phin,
-                security=security)
+                reps, prime_hash, acc_copy, phin)
             tkst = ""
             for time in bulk_membership_gen:
                 tkst += str(time) + ", "
@@ -435,7 +395,7 @@ def make_plots():
     plt.show()
 
     # 4 membership gen
-    plt.title("Avg. membership proof time")
+    plt.title("Avg. membership proof generation time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -449,7 +409,7 @@ def make_plots():
 
     # 2 memship veri
 
-    plt.title("Avg. membership verify time")
+    plt.title("Avg. membership verification time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -459,7 +419,7 @@ def make_plots():
     plt.savefig(benchmark_results + "membership_verify.png")
     plt.show()
     # 4 nonmembership gen
-    plt.title("Avg. nonmembership proof time")
+    plt.title("Avg. non-membership proof generation time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -472,7 +432,7 @@ def make_plots():
     plt.show()
 
     # 2 nomemgen
-    plt.title("Avg. nonmembership verify time")
+    plt.title("Avg. non-membership verification time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -484,7 +444,7 @@ def make_plots():
 
     # 4 bulk memship gen
     #bulk_sizes = [100, 1000, 5000, iters]
-    plt.title("Total bulk membership proof time")
+    plt.title("Total bulk membership proof generation time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -500,7 +460,7 @@ def make_plots():
     plt.savefig(benchmark_results + "bulk_membership_proof.png")
     plt.show()
 
-    plt.title("Avg bulk membership proof time")
+    plt.title("Avg. bulk membership proof generation time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -511,9 +471,9 @@ def make_plots():
     def get_avg100(measure):
         return [m/100 for m in measure]
 
-    plt.plot(ns, [m/100 for m in measurement80.bulk_measurements[0]], label="hash80-100")
+    #plt.plot(ns, [m/100 for m in measurement80.bulk_measurements[0]], label="hash80-100")
     plt.plot(ns, get_avg(measurement80.bulk_measurements[1]), label="hash80-all")
-    plt.plot(ns, [m/100 for m in measurement802.bulk_measurements[0]],'--', label="No-u-hash80-100")
+    #plt.plot(ns, [m/100 for m in measurement802.bulk_measurements[0]],'--', label="No-u-hash80-100")
     plt.plot(ns, get_avg(measurement802.bulk_measurements[1]), '--', label="No-u-hash80-all")
     plt.plot(ns, get_avg(measurement40.bulk_measurements[1]), label="hash40-all")
     plt.plot(ns, get_avg(measurement402.bulk_measurements[1]), '--',label="No-u-hash40-all")
@@ -521,7 +481,7 @@ def make_plots():
     plt.savefig(benchmark_results + "bulk_membership_proof_avg.png")
     plt.show()
 
-    plt.title("Total bulk membership verify time")
+    plt.title("Total bulk membership verification time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.plot(ns, measurement80.bulk_measurements[2], label="hash80-100")
@@ -533,7 +493,7 @@ def make_plots():
     plt.savefig(benchmark_results + "bulk_membership_verify.png")
 
     # 4 bulk nonmembership gen
-    plt.title("Avg. bulk nonmembership proof time")
+    plt.title("Avg. bulk non-membership proof generation time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -547,7 +507,7 @@ def make_plots():
     plt.savefig(benchmark_results + "bulk_nonmembership_proof_avg.png")
     plt.show()
 
-    plt.title("Total bulk nonmembership proof time")
+    plt.title("Total bulk non-membership proof generation time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -562,7 +522,7 @@ def make_plots():
     plt.show()
 
     # 2 bulk nonmembership verify
-    plt.title("Total bulk nonmembership verify time")
+    plt.title("Total bulk non-membership verify time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -574,7 +534,7 @@ def make_plots():
     plt.savefig(benchmark_results + "bulk_nonmembership_verify.png")
     plt.show()
 
-    plt.title("Avg. bulk nonmembership verify time")
+    plt.title("Avg. bulk non-membership verify time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -596,13 +556,16 @@ def run():
     phin = (p-1)*(q-1)
     acc1 = Accumulator(2048, rsa_modulus)
     acc2 = AccumulatorNoU(2048, rsa_modulus)
-    hash40 = PrimeHashv2(40)
-    hash80 = PrimeHashv2(80)
-    run_rsa_benchmarks(hash40, "hash40acc1", acc1, phin)
-    run_rsa_benchmarks(hash80, "hash80acc1", acc1, phin)
-    run_rsa_benchmarks(hash40, "hash40acc2", acc2, phin)
-    run_rsa_benchmarks(hash80, "hash80acc2", acc2, phin)
+    hash40 = RandomOraclePrimeHash(40)
+    hash80 = RandomOraclePrimeHash(80)
+    hash256 = RandomOraclePrimeHash(256)
+    #run_rsa_benchmarks(hash40, "hash40acc1", acc1, phin)
+    #run_rsa_benchmarks(hash40, "hash40acc2", acc2, phin)
+    run_rsa_benchmarks(hash256, "hash256acc1", acc1, phin)
+    run_rsa_benchmarks(hash256, "hash256acc2", acc2, phin)
+    #run_rsa_benchmarks(hash80, "hash80acc1", acc1, phin)
+    #run_rsa_benchmarks(hash80, "hash80acc2", acc2, phin)
 
-#run()
+run()
 #read_benchmarks(1)
-make_plots()
+#make_plots()

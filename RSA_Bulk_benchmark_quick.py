@@ -3,7 +3,7 @@ from copy import deepcopy
 from random import shuffle
 
 from RSAAccumulator import generate_safe_RSA_modulus, Accumulator, AccumulatorNoU, verify_membership
-from prime_hash import PrimeHashv2
+from prime_hash import RandomOraclePrimeHash
 
 
 def run_bench(h, label, acc_og):
@@ -11,7 +11,7 @@ def run_bench(h, label, acc_og):
     n = interval * 10
 
     bulks_lens = 2
-    reps = 2
+    reps = 5
     f = open("bulk_membership.txt", "a")
     bulk_membership_gen = [[0 for _ in range(bulks_lens)] for _ in range(int(n/interval))]  # 100, 1000, 10000? n
     bulk_membership_ver = [[0 for _ in range(bulks_lens)] for _ in range(int(n/interval))]  # 100, 1000, 10000? n
@@ -33,8 +33,6 @@ def run_bench(h, label, acc_og):
             end_time = time.time()
             insertion_times[m] += (end_time - start_time)/reps
             bulk_sizes = [100, len(inserted_elements)]
-            #print(len(inserted_elements))
-            #shuffle(inserted_elements)
             for idx in range(bulks_lens):
                 start_time = time.time()
                 witnesses = acc.get_bulk_membership(inserted_elements[:bulk_sizes[idx]])
@@ -62,10 +60,10 @@ def run():
     print("Generation done")
     acc1 = Accumulator(2048, rsa_modulus)
     acc2 = AccumulatorNoU(2048, rsa_modulus)
-    hash40 = PrimeHashv2(40)
-    hash80 = PrimeHashv2(80)
+    hash40 = RandomOraclePrimeHash(40)
+    hash80 = RandomOraclePrimeHash(80)
     run_bench(hash40, "hash40acc2", acc2)
     run_bench(hash80, "hash80acc2", acc2)
-    #run_bench(hash40, "hash40acc1", acc1)
-    #run_bench(hash80, "hash80acc1", acc1)
+    run_bench(hash40, "hash40acc1", acc1)
+    run_bench(hash80, "hash80acc1", acc1)
 run()
