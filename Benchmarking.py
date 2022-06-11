@@ -1,78 +1,16 @@
 import copy
 import random
 import time
-
 from gmpy2 import powmod, gcdext
-
-from MerkleTree import MerkleTree
 from RSAAccumulator import Accumulator, generate_safe_RSA_modulus, verify_membership, verify_nonmembership, \
     verify_bulk_nonmembership, AccumulatorNoU
 from prime_hash import RandomOraclePrimeHash, PrimeHash
-from TestObject import TestObject
-from Verification import verify
+
 import matplotlib.pyplot as plt
 
 
 # Sorry if you are reading this...
 # This code has not been cleaned
-
-def MerkleTreeBenchmark(iters, memqueries, nonmemqueries, reps):
-    cons_times = []
-    memqueries_proof_time = []
-    memqueries_verify_time = []
-    nonmemqueries_proof_time = []
-    nonmemqueries_verify_time = []
-    for j in range(reps):
-        test_objects = []
-        for i in range(iters):
-            test_objects.append(TestObject(i * 2))
-        random.shuffle(test_objects)
-        start_time = time.time()
-        tree = MerkleTree(test_objects[0], test_objects[1])
-        for i in range(2, iters):
-            tree.insert(test_objects[i])
-        end_time = time.time()
-        cons_times.append(end_time - start_time)
-        print(f"Construction time {end_time - start_time}")
-        start_time = time.time()
-        witnesses = []
-        for i in range(memqueries):
-            witness = tree.checkObject(TestObject(i * 2))
-            witnesses.append(witness)
-        end_time = time.time()
-        memqueries_proof_time.append(end_time - start_time)
-        print(f"Memquery proof {memqueries} time {end_time - start_time}")
-        start_time = time.time()
-        for i in range(memqueries):
-            verify(tree.root.hash, witnesses[i])
-        end_time = time.time()
-        memqueries_verify_time.append(end_time - start_time)
-        print(f"Memquery verify {memqueries} time {end_time - start_time}")
-        start_time = time.time()
-        nonmem_witnesses = []
-        for i in range(nonmemqueries):
-            witness = tree.checkObject(TestObject(i * 2 + 1))
-            nonmem_witnesses.append(witness)
-        end_time = time.time()
-        nonmemqueries_proof_time.append(end_time - start_time)
-        print(f"Nonmemqueries proof {nonmemqueries} time {end_time - start_time}")
-        start_time = time.time()
-        for i in range(nonmemqueries):
-            verify(tree.root.hash, witnesses[i])
-        end_time = time.time()
-        nonmemqueries_verify_time.append(end_time - start_time)
-        print(f"Nonmemqueries verify {nonmemqueries} time {end_time - start_time}")
-    print(f"Avg cons. time {sum(cons_times) / reps}, avg per query {sum(memqueries_verify_time) / (reps * iters)} ")
-    print(
-        f"Avg mem. proof  time {sum(memqueries_proof_time) / reps}, avg per query {sum(memqueries_proof_time) / (reps * memqueries)}")
-    print(
-        f"Avg mem. verify time {sum(memqueries_verify_time) / reps} avg per query {sum(memqueries_verify_time) / (reps * memqueries)}")
-    print(
-        f"Avg nonmem. proof time {sum(nonmemqueries_proof_time) / reps}, avg per query {sum(nonmemqueries_proof_time) / (reps * nonmemqueries)}")
-    print(
-        f"Avg nonmem. verify time {sum(nonmemqueries_verify_time) / reps} avg per query {sum(nonmemqueries_verify_time) / (reps * nonmemqueries)}")
-
-
 # This really should use the measurement class
 # but I am way too lazy
 # As we will not be evaluated on the code --- this is ugly and we didnt bother refactoring it
@@ -522,7 +460,7 @@ def make_plots():
     plt.show()
 
     # 2 bulk nonmembership verify
-    plt.title("Total bulk non-membership verify time")
+    plt.title("Total bulk non-membership verification time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -534,7 +472,7 @@ def make_plots():
     plt.savefig(benchmark_results + "bulk_nonmembership_verify.png")
     plt.show()
 
-    plt.title("Avg. bulk non-membership verify time")
+    plt.title("Avg. bulk non-membership verification time")
     plt.xlabel("Total insertions")
     plt.ylabel("Time in seconds")
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -566,6 +504,6 @@ def run():
     #run_rsa_benchmarks(hash80, "hash80acc1", acc1, phin)
     #run_rsa_benchmarks(hash80, "hash80acc2", acc2, phin)
 
-run()
+#run()
 #read_benchmarks(1)
-#make_plots()
+make_plots()
